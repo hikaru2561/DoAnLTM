@@ -262,7 +262,6 @@ def handle_button_click(data):
             emit('server_response', {'error': f'Danh sách không tồn tại cho: {name}'}, room=request.sid)
             return
 
-        # Cập nhật danh sách symbol cần stream cho client này
         symbols = exchange_map[name]
 
         # Gửi dữ liệu hiện tại từ DB cho client
@@ -291,7 +290,7 @@ def handle_button_click(data):
         print("❌ Lỗi khi xử lý sự kiện button_click:", e)
         socketio.emit('server_response', {'error': str(e)}, room=request.sid)
 
-
+# Nạp tiền vào ví
 @socketio.on('deposit')
 def handle_deposit(data):
     user_id = user_sessions.get(request.sid)
@@ -335,7 +334,7 @@ def handle_deposit(data):
     finally:
         session.close()
 
-
+# Rút tiền
 @socketio.on('withdraw')
 def handle_withdraw(data):
     user_id = user_sessions.get(request.sid)
@@ -380,7 +379,7 @@ def handle_withdraw(data):
     finally:
         session.close()
 
-
+# Lấy lịch sử giao dịch
 @socketio.on('transaction_history')
 def handle_transaction_history():
     user_id = user_sessions.get(request.sid)
@@ -401,6 +400,7 @@ def handle_transaction_history():
     finally:
         session.close()
 
+# Lấy danh mục đầu tư
 @socketio.on('portfolio')
 def handle_portfolio():
     user_id = user_sessions.get(request.sid)
@@ -421,6 +421,7 @@ def handle_portfolio():
     finally:
         session.close()
 
+#Lịch sử lệnh giao dịch
 @socketio.on('order_history')
 def handle_order_history():
     user_id = user_sessions.get(request.sid)
@@ -444,6 +445,7 @@ def handle_order_history():
     finally:
         session.close()
 
+#Đặt lệnh giao dịch
 @socketio.on('place_order')
 def handle_place_order(data):
     user_id = user_sessions.get(request.sid)
@@ -503,6 +505,7 @@ def handle_place_order(data):
     finally:
         session.close()
 
+#Sổ lênh giao dịch
 @socketio.on('order_book')
 def handle_order_book():
     user_id = user_sessions.get(request.sid)

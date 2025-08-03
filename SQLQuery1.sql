@@ -66,13 +66,12 @@ CREATE TABLE MarketData (
     Floor FLOAT,
     RefPrice FLOAT,
 
-	Highs Float,
-	Lows float,
+	High Float,
+	Low float,
 	TotalVol float
 
 );
 
-drop table MarketData
 
 -- Quỹ người dùng
 CREATE TABLE Quy_nguoi_dung (
