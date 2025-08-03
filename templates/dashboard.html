@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Table</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Stock Data</h1>
+    <div class="btn-group mb-3" role="group" aria-label="Chọn sàn/chỉ số">
+        <button onclick="handleExchangeClick('HOSE')" class="btn btn-primary">HOSE</button>
+        <button onclick="handleExchangeClick('HNX')" class="btn btn-primary">HNX</button>
+        <button onclick="handleExchangeClick('UPCOM')" class="btn btn-primary">UPCOM</button>
+        <button onclick="handleExchangeClick('VN30')" class="btn btn-success">VN30</button>
+        <button onclick="handleExchangeClick('VN100')" class="btn btn-success">VN100</button>
+        <button onclick="handleExchangeClick('HNX30')" class="btn btn-success">HNX30</button>
+    </div>
+
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Ceiling</th>
+                <th>Floor</th>
+                <th>RefPrice</th>
+                <th>BidPrice1</th>
+                <th>BidVol1</th>
+                <th>BidPrice2</th>
+                <th>BidVol2</th>
+                <th>BidPrice3</th>
+                <th>BidVol3</th>
+                <th>AskPrice1</th>
+                <th>AskVol1</th>
+                <th>AskPrice2</th>
+                <th>AskVol2</th>
+                <th>AskPrice3</th>
+                <th>AskVol3</th>
+                <th>LastPrice</th>
+                <th>LastVol</th>
+                <th>Change</th>
+                <th>RatioChange</th>
+            </tr>
+        </thead>
+        <tbody id="data-body">
+        </tbody>
+    </table>
+
+    <script>
+        var socket = io();
+        const dataMap = {};
+
+        socket.on('connect', function () {
+            console.log('Connected to server');
+        });
+
+        socket.on('server_data', function (data) {
+            try {
+                const parsedData = JSON.parse(data);
+                const symbol = parsedData.Symbol;
+                if (!symbol) return;
+
+                dataMap[symbol] = parsedData;
+                updateTable();
+
+            } catch (e) {
+                console.error('Invalid JSON:', data);
+            }
+        });
+
+        function updateTable() {
+            const tbody = document.getElementById('data-body');
+            tbody.innerHTML = ''; // Clear previous
+
+            Object.values(dataMap).forEach(item => {
+                const row = document.createElement('tr');
+
+                const fields = [
+                    "Symbol", "Ceiling", "Floor", "RefPrice",
+                    "BidPrice1", "BidVol1", "BidPrice2", "BidVol2", "BidPrice3", "BidVol3",
+                    "AskPrice1", "AskVol1", "AskPrice2", "AskVol2", "AskPrice3", "AskVol3",
+                    "LastPrice", "LastVol", "Change", "RatioChange"
+                ];
+
+                fields.forEach(field => {
+                    const cell = document.createElement('td');
+                    cell.textContent = item[field] !== undefined ? item[field] : "";
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            });
+        }
+function handleExchangeClick(exchangeName) {
+    // 🧹 Xoá dữ liệu cũ
+    for (const key in dataMap) {
+        delete dataMap[key];
+    }
+    document.getElementById('data-body').innerHTML = '';
+
+    socket.emit('button_click', { exchange: exchangeName });
+    console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
+}   
+
+        socket.on('disconnect', function () {
+            console.log('Disconnected from server');
+        });
+    </script>
+</body>
+
+</html>
