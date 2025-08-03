@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Table</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Stock Data</h1>
+    <div class="btn-group mb-3" role="group" aria-label="Chọn sàn/chỉ số">
+        <button onclick="handleExchangeClick('HOSE')" class="btn btn-primary">HOSE</button>
+        <button onclick="handleExchangeClick('HNX')" class="btn btn-primary">HNX</button>
+        <button onclick="handleExchangeClick('UPCOM')" class="btn btn-primary">UPCOM</button>
+        <button onclick="handleExchangeClick('VN30')" class="btn btn-success">VN30</button>
+        <button onclick="handleExchangeClick('VN100')" class="btn btn-success">VN100</button>
+        <button onclick="handleExchangeClick('HNX30')" class="btn btn-success">HNX30</button>
+    </div>
+
+    <table id="data-table">
+        <thead>
+  <tr>
+  <th rowspan="2">CK</th>
+  <th rowspan="2">Trần</th>
+  <th rowspan="2">Sàn</th>
+  <th rowspan="2">TC</th>
+  <th colspan="6">Bên mua</th>
+  <th colspan="4">Khớp lệnh</th>
+  <th colspan="6">Bên bán</th>
+  <th rowspan="2">Tổng KL</th>
+  <th rowspan="2">Cao</th>
+  <th rowspan="2">Thấp</th>
+</tr>
+<tr>
+  <th>Giá 3</th><th>KL 3</th><th>Giá 2</th><th>KL 2</th><th>Giá 1</th><th>KL 1</th>
+  <th>Giá</th><th>KL</th><th>+/-</th><th>+/- (%)</th>
+  <th>Giá 1</th><th>KL 1</th><th>Giá 2</th><th>KL 2</th><th>Giá 3</th><th>KL 3</th>
+</tr>
+</thead>
+        <tbody id="data-body">
+        </tbody>
+    </table>
+
+    <script>
+        var socket = io();
+        const dataMap = {};
+
+        socket.on('connect', function () {
+            console.log('Connected to server');
+        });
+
+        socket.on('server_data', function (data) {
+            try {
+                const parsedData = JSON.parse(data);
+                const symbol = parsedData.Symbol;
+                if (!symbol) return;
+
+                dataMap[symbol] = parsedData;
+                updateTable();
+
+            } catch (e) {
+                console.error('Invalid JSON:', data);
+            }
+        });
+
+        function updateTable() {
+    const tbody = document.getElementById('data-body');
+    tbody.innerHTML = ''; // Clear previous
+
+    // Sắp xếp theo A-Z
+    const sortedData = Object.values(dataMap).sort((a, b) => a.Symbol.localeCompare(b.Symbol));
+
+    sortedData.forEach(item => {
+        const row = document.createElement('tr');
+
+        const fields = [
+            "Symbol", "Ceiling", "Floor", "RefPrice",
+            "BidPrice3", "BidVol3",
+            "BidPrice2", "BidVol2",
+            "BidPrice1", "BidVol1",
+            "LastPrice", "LastVol", "Change", "RatioChange",
+            "AskPrice1", "AskVol1",
+            "AskPrice2", "AskVol2",
+            "AskPrice3", "AskVol3",
+            "TotalVol", "High", "Low"
+        ];
+
+        fields.forEach(field => {
+            const cell = document.createElement('td');
+            const value = item[field];
+
+            if (typeof value === 'number') {
+                if (field.includes("Price") || field === "Ceiling" || field === "Floor" || field === "RefPrice" || field === "LastPrice" || field === "High" || field === "Low" || field.includes("AskPrice") || field.includes("BidPrice")) {
+                    // Giá chia 1000
+                    cell.textContent = (value / 1000).toFixed(2);
+                } else if (field.includes("Vol") || field === "TotalVol" || field === "LastVol") {
+                    // Khối lượng giữ nguyên, format số có dấu phẩy
+                    cell.textContent = value.toLocaleString("en-US");
+                } else if (field === "Change" || field === "RatioChange") {
+                    // Tăng/giảm tuyệt đối và phần trăm
+                    const display = (value > 0 ? '+' : '') + value.toFixed(2);
+                    cell.textContent = field === "RatioChange" ? display + '%' : display;
+                    cell.style.color = value > 0 ? 'limegreen' : value < 0 ? 'red' : '#333';
+                } else {
+                    cell.textContent = value;
+                }
+            } else {
+                cell.textContent = value || "";
+            }
+
+            row.appendChild(cell);
+        });
+
+        tbody.appendChild(row);
+    });
+}
+
+function handleExchangeClick(exchangeName) {
+    // 🧹 Xoá dữ liệu cũ
+    for (const key in dataMap) {
+        delete dataMap[key];
+    }
+    document.getElementById('data-body').innerHTML = '';
+
+    socket.emit('button_click', { exchange: exchangeName });
+    console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
+}   
+
+        socket.on('disconnect', function () {
+            console.log('Disconnected from server');
+        });
+            window.onload = function () {
+    handleExchangeClick('VN30');
+    };
+    </script>
+    
+</body>
+
+</html>
