@@ -1,36 +1,147 @@
-<h2>Đăng ký qua WebSocket</h2>
-<form id="registerForm">
-    <input name="name" placeholder="Tên"><br>
-    <input name="username" placeholder="Username"><br>
-    <input name="email" placeholder="Email"><br>
-    <input name="phone" placeholder="SĐT"><br>
-    <input type="date" name="birthday"><br>
-    <input name="country" placeholder="Quốc gia"><br>
-    <select name="sex"><option value="1">Nam</option><option value="0">Nữ</option></select><br>
-    <input type="password" name="password" placeholder="Mật khẩu"><br>
-    <button type="submit">Đăng ký</button>
-</form>
-<div id="registerResult"></div>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng ký</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+    }
 
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-<script>
+    .register-container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #d32f2f;
+      outline: none;
+    }
+
+    .submit-btn {
+      background-color: #d32f2f;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .submit-btn:hover {
+      background-color: #b71c1c;
+    }
+
+    #registerResult {
+      margin-top: 12px;
+      text-align: center;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <h2>Đăng ký tài khoản</h2>
+    <form id="registerForm">
+      <input name="name" class="form-input" placeholder="Tên" required>
+      <input name="username" class="form-input" placeholder="Username" required>
+      <input name="email" type="email" class="form-input" placeholder="Email" required>
+      <input name="phone" class="form-input" placeholder="SĐT" required>
+      <input type="date" name="birthday" class="form-input" required>
+      <input name="country" class="form-input" placeholder="Quốc gia" required>
+
+      <!-- ĐÃ SỬA GIỚI TÍNH -->
+      <select name="sex" class="form-input" required>
+        <option value="" disabled selected>Giới tính</option>
+        <option value="True">Nam</option>
+        <option value="False">Nữ</option>
+      </select>
+
+      <input type="password" name="password" class="form-input" placeholder="Mật khẩu" required>
+      <button type="submit" class="submit-btn">Đăng ký</button>
+    </form>
+    <div id="registerResult"></div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script>
     const socket = io();
-    const form = document.getElementById('registerForm');
+    let isConnected = false;
 
+    socket.on('connect', () => {
+      console.log('✅ Socket connected!');
+      isConnected = true;
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err);
+    });
+
+    const form = document.getElementById('registerForm');
     form.addEventListener('submit', e => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        socket.emit('register', data);
+      e.preventDefault();
+      if (!isConnected) {
+        alert("⚠️ Chưa kết nối đến máy chủ, vui lòng thử lại sau!");
+        return;
+      }
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      // 🔧 CHUYỂN GIỚI TÍNH TỪ STRING SANG BOOLEAN
+      data.sex = data.sex === 'True';
+
+      console.log("📤 Đăng ký gửi:", data);
+      socket.emit('register', data);
     });
 
     socket.on('register_response', (res) => {
-        const result = document.getElementById('registerResult');
-        if (res.status === 'success') {
-            result.innerText = res.message;
-            setTimeout(() => window.location.href = "/login", 1000);
-        } else {
-            result.innerText = "❌ " + res.message;
-        }
-    });
-</script>
+  const result = document.getElementById('registerResult');
+  console.log("📥 Phản hồi:", res);
+  if (res.status === 'success') {
+    result.style.color = 'green';
+    result.innerText = '✅ ' + res.message;
+
+    // 🔄 Gửi sự kiện về trang cha để đóng modal và cập nhật UI
+    setTimeout(() => {
+      window.parent.postMessage({
+        type: 'register_success',
+        username: form.elements['username'].value  // Hoặc res.username nếu backend trả
+      }, '*');
+    }, 1000);
+  } else {
+    result.style.color = 'red';
+    result.innerText = '❌ ' + res.message;
+  }
+});
+
+  </script>
+</body>
+</html>

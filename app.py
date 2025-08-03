@@ -19,7 +19,7 @@ import json
 import threading
 import queue
 from datetime import date
-from models.models import GiaoDich, QuyNguoiDung,DatLenh,DanhMucDauTu
+from models.models import GiaoDich, QuyNguoiDung,DatLenh,DanhMucDauTu,MarketData  
 
 # Khởi tạo client và stream
 client = MarketDataClient(config)
@@ -37,8 +37,6 @@ VN100 = []
 clients = None
 task_queue = queue.Queue()
 NUM_WORKERS = 3
-
-data = None
 
 
 app = Flask(__name__)
@@ -75,27 +73,84 @@ def init_app():
 
     HNX30 = get_symbols_from_index('hnx30')
     time.sleep(1)
+    threading.Thread(target=broadcast_market_data_loop, daemon=True).start()
 
 def get_user_id(sid):
     return user_sessions.get(sid)
 
+def broadcast_market_data_loop():
+    while True:
+        if clients and symbols:
+            try:
+                session = SessionLocal()
+                results = session.query(MarketData).filter(MarketData.Symbol.in_(symbols)).all()
+                for row in results:
+                    data = {
+                            'Symbol': row.Symbol,
+                            'BidPrice1': row.BidPrice1, 'BidVol1': row.BidVol1,
+                            'BidPrice2': row.BidPrice2, 'BidVol2': row.BidVol2,
+                            'BidPrice3': row.BidPrice3, 'BidVol3': row.BidVol3,
+                            'AskPrice1': row.AskPrice1, 'AskVol1': row.AskVol1,
+                            'AskPrice2': row.AskPrice2, 'AskVol2': row.AskVol2,
+                            'AskPrice3': row.AskPrice3, 'AskVol3': row.AskVol3,
+                            'LastPrice': row.LastPrice, 'LastVol': row.LastVol,
+                            'Change': row.Change, 'RatioChange': row.RatioChange,
+                            'Ceiling': row.Ceiling, 'Floor': row.Floor, 'RefPrice': row.RefPrice,
+                            'High': row.High,
+                            'Low': row.Low,
+                            'TotalVol': row.TotalVol
+                        }
+                    socketio.emit('server_data', json.dumps(data, ensure_ascii=False), room=clients)
+            except Exception as e:
+                print(f"❌ Lỗi khi gửi dữ liệu từ DB: {e}")
+            finally:
+                session.close()
+        time.sleep(1)  
+
+
+def insert_or_update_market_data(content: dict):
+    session = SessionLocal()
+    try:
+        symbol = content.get("Symbol")
+        if not symbol:
+            return
+
+        existing = session.query(MarketData).filter_by(Symbol=symbol).first()
+        if not existing:
+            existing = MarketData(Symbol=symbol)
+
+        # Cập nhật tất cả các trường
+        for field in [
+            "BidPrice1", "BidVol1", "BidPrice2", "BidVol2", "BidPrice3", "BidVol3",
+            "AskPrice1", "AskVol1", "AskPrice2", "AskVol2", "AskPrice3", "AskVol3",
+            "LastPrice", "LastVol", "Change", "RatioChange",
+            "Ceiling", "Floor", "RefPrice",
+            "High", "Low", "TotalVol"  # <--- thêm vào đây
+        ]:
+            if field in content:
+                setattr(existing, field, content[field])
+
+        session.merge(existing)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        print(f"❌ DB insert/update error: {e}")
+    finally:
+        session.close()
+
 
 # Register WebSocket event
 def get_data(message):
-    global clients,data
-    # Bỏ qua mọi message không phải dict hoặc không có trường 'Content'
     if not isinstance(message, dict) or "Content" not in message:
         return
+
     content_str = message.get("Content")
     if not isinstance(content_str, str):
         return
 
     try:
         content = json.loads(content_str)
-        json_data = json.dumps(content, ensure_ascii=False)
-        print(f"📤 Gửi tới client: {json_data}")
-        socketio.emit('server_data', json_data, room=clients)
-
+        insert_or_update_market_data(content)
     except Exception as e:
         print("❌ Lỗi xử lý Content:", e)
 
@@ -186,14 +241,14 @@ def handle_login(data):
 @socketio.on('button_click')
 def handle_button_click(data):
     task_queue.put({'event': 'button_click', 'data': data, 'sid': request.sid})
-    global clients
-    clients = request.sid
-    global  symbols
-    global mm,VN100,VN30,HNX30,HOSE,HNX,UPCOM
-    name = data.get('exchange')
-    print(f"🔘 Button clicked: {name}")
+    global clients, symbols
+    global VN100, VN30, HNX30, HOSE, HNX, UPCOM
 
-    exchange_map = {
+    clients = request.sid
+    name = data.get('exchange')
+    print(f"🔘 Button clicked: {name} từ client {request.sid}")
+
+    exchange_map = {    
         'HOSE': HOSE,
         'HNX': HNX,
         'UPCOM': UPCOM,
@@ -201,22 +256,41 @@ def handle_button_click(data):
         'VN100': VN100,
         'HNX30': HNX30
     }
-    symbols = None
-    try:
-        if name in exchange_map:
-            symbols = exchange_map[name]
 
-        else:
-            emit('server_response', {'error': f'Danh sách không tồn tại cho: {name}'},room=request.sid)
+    try:
+        if name not in exchange_map:
+            emit('server_response', {'error': f'Danh sách không tồn tại cho: {name}'}, room=request.sid)
             return
 
-        channel = f"X:{'-'.join(symbols)}"
-        mm.swith_channel(channel)
+        # Cập nhật danh sách symbol cần stream cho client này
+        symbols = exchange_map[name]
 
+        # Gửi dữ liệu hiện tại từ DB cho client
+        session = SessionLocal()
+        try:
+            from models.models import MarketData  # đảm bảo đã import
+            results = session.query(MarketData).filter(MarketData.Symbol.in_(symbols)).all()
+            for row in results:
+                data = {
+                    'Symbol': row.Symbol,
+                    'BidPrice1': row.BidPrice1, 'BidVol1': row.BidVol1,
+                    'BidPrice2': row.BidPrice2, 'BidVol2': row.BidVol2,
+                    'BidPrice3': row.BidPrice3, 'BidVol3': row.BidVol3,
+                    'AskPrice1': row.AskPrice1, 'AskVol1': row.AskVol1,
+                    'AskPrice2': row.AskPrice2, 'AskVol2': row.AskVol2,
+                    'AskPrice3': row.AskPrice3, 'AskVol3': row.AskVol3,
+                    'LastPrice': row.LastPrice, 'LastVol': row.LastVol,
+                    'Change': row.Change, 'RatioChange': row.RatioChange,
+                    'Ceiling': row.Ceiling, 'Floor': row.Floor, 'RefPrice': row.RefPrice,
+                }
+                socketio.emit('server_data', json.dumps(data, ensure_ascii=False), room=clients)
+        finally:
+            session.close()
 
     except Exception as e:
         print("❌ Lỗi khi xử lý sự kiện button_click:", e)
-        socketio.emit('server_response', {'error': str(e)},room=request.sid)
+        socketio.emit('server_response', {'error': str(e)}, room=request.sid)
+
 
 @socketio.on('deposit')
 def handle_deposit(data):
@@ -456,14 +530,10 @@ def handle_order_book():
 def handle_connect(data):
     print(f"🔗 Client {request.sid} đã kết nối.")
 
-
-
 @socketio.on('disconnect')
 def handle_disconnect():
     user_sessions.pop(request.sid, None)
     print(f"🔗 Client {request.sid} đã ngắt kết nối.")
-
-
 
 if __name__ == '__main__':
     try:

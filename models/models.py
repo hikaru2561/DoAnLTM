@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, DECIMAL, Boolean, ForeignKey, BigInteger
+from sqlalchemy import Column, Integer, String, Date, DateTime, DECIMAL, Boolean, ForeignKey, BigInteger,Float
 from sqlalchemy.dialects.mssql import NVARCHAR
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -161,3 +161,36 @@ class ThongBao(Base):
     thoi_gian = Column(DateTime)
 
     user = relationship("User", back_populates="thong_baos")
+
+class MarketData(Base):
+    __tablename__ = 'MarketData'
+
+    Symbol = Column(String(20), primary_key=True)
+
+    BidPrice1 = Column(Float)
+    BidVol1 = Column(Float)
+    BidPrice2 = Column(Float)
+    BidVol2 = Column(Float)
+    BidPrice3 = Column(Float)
+    BidVol3 = Column(Float)
+
+    AskPrice1 = Column(Float)
+    AskVol1 = Column(Float)
+    AskPrice2 = Column(Float)
+    AskVol2 = Column(Float)
+    AskPrice3 = Column(Float)
+    AskVol3 = Column(Float)
+
+    LastPrice = Column(Float)
+    LastVol = Column(Float)
+
+    Change = Column(Float)
+    RatioChange = Column(Float)
+
+    Ceiling = Column(Float)
+    Floor = Column(Float)
+    RefPrice = Column(Float)
+
+    High = Column(Float)
+    Low = Column(Float)
+    TotalVol = Column(Float)

@@ -39,6 +39,41 @@ CREATE TABLE Giao_dich (
     ngay_giao_dich DATE
 );
 
+CREATE TABLE MarketData (
+    Symbol VARCHAR(20) PRIMARY KEY,
+
+    BidPrice1 FLOAT,
+    BidVol1 FLOAT,
+    BidPrice2 FLOAT,
+    BidVol2 FLOAT,
+    BidPrice3 FLOAT,
+    BidVol3 FLOAT,
+
+    AskPrice1 FLOAT,
+    AskVol1 FLOAT,
+    AskPrice2 FLOAT,
+    AskVol2 FLOAT,
+    AskPrice3 FLOAT,
+    AskVol3 FLOAT,
+
+    LastPrice FLOAT,
+    LastVol FLOAT,
+
+    Change FLOAT,
+    RatioChange FLOAT,
+
+    Ceiling FLOAT,
+    Floor FLOAT,
+    RefPrice FLOAT,
+
+	Highs Float,
+	Lows float,
+	TotalVol float
+
+);
+
+drop table MarketData
+
 -- Quỹ người dùng
 CREATE TABLE Quy_nguoi_dung (
     ID INT IDENTITY PRIMARY KEY,
