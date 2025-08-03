@@ -210,11 +210,6 @@
             Object.values(dataMap).forEach(item => {
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
-                row.addEventListener('click', () => {
-                    selectedSymbol = item.Symbol;
-                    updateDetailForm(item);
-                    showModal();
-                });
 
                 const fields = [
                     "Symbol", "Ceiling", "Floor", "RefPrice",
@@ -223,9 +218,19 @@
                     "LastPrice", "LastVol", "Change", "RatioChange"
                 ];
 
-                fields.forEach(field => {
+                fields.forEach((field, idx) => {
                     const cell = document.createElement('td');
                     cell.textContent = item[field] !== undefined ? item[field] : "";
+                    // Chỉ gán sự kiện click cho cột đầu tiên (CK)
+                    if (idx === 0) {
+                        cell.style.cursor = 'pointer';
+                        cell.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectedSymbol = item.Symbol;
+                            updateDetailForm(item);
+                            showModal();
+                        });
+                    }
                     row.appendChild(cell);
                 });
 
