@@ -3,12 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>WebSocket Table</title>
+    <title>WebSocket Table with Detail Form</title>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
     <style>
         table {
             border-collapse: collapse;
             width: 100%;
+            margin-top: 10px;
         }
 
         th,
@@ -20,6 +21,53 @@
 
         th {
             background-color: #f0f0f0;
+        }
+
+        .btn-group {
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        #form-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #form-fields div {
+            display: flex;
+            flex-direction: column;
+            width: 150px;
+        }
+
+        #form-fields label {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        #form-fields input {
+            padding: 4px;
         }
     </style>
 </head>
