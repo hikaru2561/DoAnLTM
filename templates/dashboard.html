@@ -3,13 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>WebSocket Table with Detail Form</title>
+    <title>WebSocket Table</title>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 10px;
         }
 
         th,
@@ -45,14 +49,55 @@
             border: none;
         }
 
-        form {
-            margin-top: 20px;
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            /* thêm nền mờ */
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-weight: bold;
+            border-radius: 4px;
         }
 
         #form-fields {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-top: 15px;
         }
 
         #form-fields div {
@@ -86,35 +131,55 @@
     <table id="data-table">
         <thead>
             <tr>
-                <th>Symbol</th>
-                <th>Ceiling</th>
-                <th>Floor</th>
-                <th>RefPrice</th>
-                <th>BidPrice1</th>
-                <th>BidVol1</th>
-                <th>BidPrice2</th>
-                <th>BidVol2</th>
-                <th>BidPrice3</th>
-                <th>BidVol3</th>
-                <th>AskPrice1</th>
-                <th>AskVol1</th>
-                <th>AskPrice2</th>
-                <th>AskVol2</th>
-                <th>AskPrice3</th>
-                <th>AskVol3</th>
-                <th>LastPrice</th>
-                <th>LastVol</th>
-                <th>Change</th>
-                <th>RatioChange</th>
+                <th rowspan="2">CK</th>
+                <th rowspan="2">Trần</th>
+                <th rowspan="2">Sàn</th>
+                <th rowspan="2">TC</th>
+                <th colspan="6">Bên mua</th>
+                <th colspan="4">Khớp lệnh</th>
+                <th colspan="6">Bên bán</th>
+                <th rowspan="2">Tổng KL</th>
+                <th rowspan="2">Cao</th>
+                <th rowspan="2">Thấp</th>
+            </tr>
+            <tr>
+                <th>Giá 3</th>
+                <th>KL 3</th>
+                <th>Giá 2</th>
+                <th>KL 2</th>
+                <th>Giá 1</th>
+                <th>KL 1</th>
+                <th>Giá</th>
+                <th>KL</th>
+                <th>+/-</th>
+                <th>+/- (%)</th>
+                <th>Giá 1</th>
+                <th>KL 1</th>
+                <th>Giá 2</th>
+                <th>KL 2</th>
+                <th>Giá 3</th>
+                <th>KL 3</th>
             </tr>
         </thead>
         <tbody id="data-body">
         </tbody>
     </table>
-
+    <!-- Modal -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Chi tiết mã cổ phiếu</h2>
+                <button class="close-btn" onclick="closeModal()">Đóng</button>
+            </div>
+            <form id="detail-form">
+                <div id="form-fields"></div>
+            </form>
+        </div>
+    </div>
     <script>
         var socket = io();
         const dataMap = {};
+        let selectedSymbol = null;
 
         socket.on('connect', function () {
             console.log('Connected to server');
@@ -129,6 +194,10 @@
                 dataMap[symbol] = parsedData;
                 updateTable();
 
+                if (symbol === selectedSymbol) {
+                    updateDetailForm(parsedData);
+                }
+
             } catch (e) {
                 console.error('Invalid JSON:', data);
             }
@@ -136,10 +205,16 @@
 
         function updateTable() {
             const tbody = document.getElementById('data-body');
-            tbody.innerHTML = ''; // Clear previous
+            tbody.innerHTML = '';
 
             Object.values(dataMap).forEach(item => {
                 const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => {
+                    selectedSymbol = item.Symbol;
+                    updateDetailForm(item);
+                    showModal();
+                });
 
                 const fields = [
                     "Symbol", "Ceiling", "Floor", "RefPrice",
@@ -157,16 +232,57 @@
                 tbody.appendChild(row);
             });
         }
-function handleExchangeClick(exchangeName) {
-    // 🧹 Xoá dữ liệu cũ
-    for (const key in dataMap) {
-        delete dataMap[key];
-    }
-    document.getElementById('data-body').innerHTML = '';
 
-    socket.emit('button_click', { exchange: exchangeName });
-    console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
-}   
+        function updateDetailForm(data) {
+            const container = document.getElementById('form-fields');
+            container.innerHTML = '';
+
+            Object.entries(data).forEach(([key, value]) => {
+                const div = document.createElement('div');
+
+                const label = document.createElement('label');
+                label.textContent = key;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.readOnly = true;
+                input.name = key;
+
+                div.appendChild(label);
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+        }
+
+        function handleExchangeClick(exchangeName) {
+            for (const key in dataMap) {
+                delete dataMap[key];
+            }
+            document.getElementById('data-body').innerHTML = '';
+            closeModal();
+            selectedSymbol = null;
+
+            socket.emit('button_click', { exchange: exchangeName });
+            console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
+        }
+
+        function showModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        // 👇 Sự kiện: đóng modal khi click ra ngoài vùng modal-content
+        window.addEventListener('click', function (event) {
+            const modal = document.getElementById('detail-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
 
         socket.on('disconnect', function () {
             console.log('Disconnected from server');
