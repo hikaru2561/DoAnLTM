@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Sổ Lệnh</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+      }
+      th {
+        background-color: #f0f0f0;
+      }
+      .message {
+        margin-top: 10px;
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Sổ lệnh đang xử lý</h2>
+    <button onclick="loadOrderBook()">Tải dữ liệu</button>
+    <div id="message" class="message"></div>
+    <table id="orderBookTable" style="display: none">
+      <thead>
+        <tr>
+          <th>Mã CK</th>
+          <th>Số lượng</th>
+          <th>Giá</th>
+          <th>Loại lệnh</th>
+          <th>Thời điểm</th>
+        </tr>
+      </thead>
+      <tbody id="orderBookBody"></tbody>
+    </table>
+
+    <script>
+      async function loadOrderBook() {
+        const messageDiv = document.getElementById("message");
+        const table = document.getElementById("orderBookTable");
+        const tbody = document.getElementById("orderBookBody");
+
+        messageDiv.textContent = "";
+        table.style.display = "none";
+        tbody.innerHTML = "";
+
+        try {
+          const response = await fetch("/order/book", {
+            method: "GET",
+            credentials: "include", // Gửi session cookie nếu có
+          });
+
+          if (response.status === 401) {
+            messageDiv.textContent =
+              "⚠️ Bạn chưa đăng nhập. Vui lòng đăng nhập để xem sổ lệnh.";
+            return;
+          }
+
+          const data = await response.json();
+
+          if (data.orders && data.orders.length > 0) {
+            data.orders.forEach((order) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+              <td>${order.symbol_id}</td>
+              <td>${order.so_luong}</td>
+              <td>${order.gia}</td>
+              <td>${order.loai_lenh}</td>
+              <td>${order.thoi_diem}</td>
+            `;
+              tbody.appendChild(row);
+            });
+            table.style.display = "table";
+          } else {
+            messageDiv.textContent = "Không có lệnh nào đang xử lý.";
+          }
+        } catch (error) {
+          messageDiv.textContent = "❌ Lỗi khi tải dữ liệu: " + error;
+        }
+      }
+    </script>
+  </body>
+</html>

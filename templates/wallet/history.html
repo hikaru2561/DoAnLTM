@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lịch sử giao dịch</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Lịch sử giao dịch</h2>
+    <button onclick="loadHistory()">Tải lại</button>
+    <table id="historyTable">
+      <thead>
+        <tr>
+          <th>Loại giao dịch</th>
+          <th>Số tiền</th>
+          <th>Ngày</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      function loadHistory() {
+        const token = localStorage.getItem("token");
+        fetch("/wallet/history", {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const tbody = document.querySelector("#historyTable tbody");
+            tbody.innerHTML = "";
+
+            if (!data.data || data.data.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="3">Không có giao dịch</td></tr>';
+              return;
+            }
+
+            data.data.forEach((row) => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+            <td>${row.loai}</td>
+            <td>${parseFloat(row.so_tien).toLocaleString("vi-VN")} VND</td>
+            <td>${row.ngay}</td>
+          `;
+              tbody.appendChild(tr);
+            });
+          })
+          .catch((err) => {
+            console.error("Lỗi:", err);
+            alert("Không thể kết nối đến máy chủ");
+          });
+      }
+
+      window.onload = loadHistory;
+    </script>
+  </body>
+</html>

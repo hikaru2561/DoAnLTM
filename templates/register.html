@@ -1,147 +1,164 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Đăng ký</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 30px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .register-container {
-      background: white;
-      padding: 30px 40px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 25px;
-      color: #333;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 10px 12px;
-      margin-bottom: 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    .form-input:focus {
-      border-color: #d32f2f;
-      outline: none;
-    }
-
-    .submit-btn {
-      background-color: #d32f2f;
-      color: white;
-      border: none;
-      padding: 10px;
-      width: 100%;
-      border-radius: 6px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .submit-btn:hover {
-      background-color: #b71c1c;
-    }
-
-    #registerResult {
-      margin-top: 12px;
-      text-align: center;
-      font-weight: bold;
-      color: #d32f2f;
-    }
-  </style>
-</head>
-<body>
-  <div class="register-container">
-    <h2>Đăng ký tài khoản</h2>
-    <form id="registerForm">
-      <input name="name" class="form-input" placeholder="Tên" required>
-      <input name="username" class="form-input" placeholder="Username" required>
-      <input name="email" type="email" class="form-input" placeholder="Email" required>
-      <input name="phone" class="form-input" placeholder="SĐT" required>
-      <input type="date" name="birthday" class="form-input" required>
-      <input name="country" class="form-input" placeholder="Quốc gia" required>
-
-      <!-- ĐÃ SỬA GIỚI TÍNH -->
-      <select name="sex" class="form-input" required>
-        <option value="" disabled selected>Giới tính</option>
-        <option value="True">Nam</option>
-        <option value="False">Nữ</option>
-      </select>
-
-      <input type="password" name="password" class="form-input" placeholder="Mật khẩu" required>
-      <button type="submit" class="submit-btn">Đăng ký</button>
-    </form>
-    <div id="registerResult"></div>
-  </div>
-
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <script>
-    const socket = io();
-    let isConnected = false;
-
-    socket.on('connect', () => {
-      console.log('✅ Socket connected!');
-      isConnected = true;
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error('❌ Socket connection error:', err);
-    });
-
-    const form = document.getElementById('registerForm');
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      if (!isConnected) {
-        alert("⚠️ Chưa kết nối đến máy chủ, vui lòng thử lại sau!");
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <title>Đăng ký</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 30px;
+        display: flex;
+        justify-content: center;
       }
 
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
+      .register-container {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+      }
 
-      // 🔧 CHUYỂN GIỚI TÍNH TỪ STRING SANG BOOLEAN
-      data.sex = data.sex === 'True';
+      h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #333;
+      }
 
-      console.log("📤 Đăng ký gửi:", data);
-      socket.emit('register', data);
-    });
+      .form-input {
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+      }
 
-    socket.on('register_response', (res) => {
-  const result = document.getElementById('registerResult');
-  console.log("📥 Phản hồi:", res);
-  if (res.status === 'success') {
-    result.style.color = 'green';
-    result.innerText = '✅ ' + res.message;
+      .form-input:focus {
+        border-color: #d32f2f;
+        outline: none;
+      }
 
-    // 🔄 Gửi sự kiện về trang cha để đóng modal và cập nhật UI
-    setTimeout(() => {
-      window.parent.postMessage({
-        type: 'register_success',
-        username: form.elements['username'].value  // Hoặc res.username nếu backend trả
-      }, '*');
-    }, 1000);
-  } else {
-    result.style.color = 'red';
-    result.innerText = '❌ ' + res.message;
-  }
-});
+      .submit-btn {
+        background-color: #d32f2f;
+        color: white;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        border-radius: 6px;
+        font-size: 15px;
+        cursor: pointer;
+      }
 
-  </script>
-</body>
+      .submit-btn:hover {
+        background-color: #b71c1c;
+      }
+
+      #registerResult {
+        margin-top: 12px;
+        text-align: center;
+        font-weight: bold;
+        color: #d32f2f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-container">
+      <h2>Đăng ký tài khoản</h2>
+      <form id="registerForm">
+        <input name="name" class="form-input" placeholder="Tên" required />
+        <input
+          name="username"
+          class="form-input"
+          placeholder="Username"
+          required
+        />
+        <input
+          name="email"
+          type="email"
+          class="form-input"
+          placeholder="Email"
+          required
+        />
+        <input name="phone" class="form-input" placeholder="SĐT" required />
+        <input type="date" name="birthday" class="form-input" required />
+        <input
+          name="country"
+          class="form-input"
+          placeholder="Quốc gia"
+          required
+        />
+
+        <!-- ĐÃ SỬA GIỚI TÍNH -->
+        <select name="sex" class="form-input" required>
+          <option value="" disabled selected>Giới tính</option>
+          <option value="True">Nam</option>
+          <option value="False">Nữ</option>
+        </select>
+
+        <input
+          type="password"
+          name="password"
+          class="form-input"
+          placeholder="Mật khẩu"
+          required
+        />
+        <button type="submit" class="submit-btn">Đăng ký</button>
+      </form>
+      <div id="registerResult"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+      const form = document.getElementById("registerForm");
+      const result = document.getElementById("registerResult");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.sex = data.sex === "True"; // Chuyển đổi thành boolean
+
+        try {
+          const res = await fetch("/api/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          const resData = await res.json();
+          if (res.ok) {
+            result.style.color = "green";
+            result.innerText = "✅ " + resData.message;
+            window.location.href = "/login";
+
+            // Gửi sự kiện về trang cha để đóng modal và cập nhật UI
+            setTimeout(() => {
+              window.parent.postMessage(
+                {
+                  type: "register_success",
+                  username: data.username,
+                },
+                "*"
+              );
+            }, 1000);
+          } else {
+            result.style.color = "red";
+            result.innerText = "❌ " + resData.message;
+          }
+        } catch (err) {
+          console.error("Lỗi:", err);
+          result.style.color = "red";
+          result.innerText = "❌ Không thể kết nối đến máy chủ.";
+        }
+      });
+    </script>
+  </body>
 </html>

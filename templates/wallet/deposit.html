@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Nạp Tiền</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 350px;
+      }
+
+      h2 {
+        text-align: center;
+        color: #333;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0 20px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #28a745;
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #218838;
+      }
+
+      #result {
+        margin-top: 15px;
+        text-align: center;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Nạp tiền</h2>
+      <input type="number" id="amount" placeholder="Nhập số tiền" />
+      <button onclick="deposit()">Nạp</button>
+      <div id="result"></div>
+    </div>
+
+    <script>
+      function deposit() {
+        const amount = document.getElementById("amount").value;
+        const token = localStorage.getItem("token"); // JWT từ login
+
+        if (!token) {
+          document.getElementById("result").innerText =
+            "❌ Bạn chưa đăng nhập.";
+          return;
+        }
+
+        fetch("/wallet/deposit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token, // JWT token từ localStorage
+          },
+          body: JSON.stringify({ amount }),
+        })
+          .then(async (response) => {
+            const data = await response.json();
+            const result = document.getElementById("result");
+            if (response.ok) {
+              result.style.color = "green";
+              result.innerText = "✅ " + data.message;
+            } else {
+              result.style.color = "red";
+              result.innerText = "❌ " + data.message;
+            }
+          })
+          .catch((error) => {
+            console.error("Lỗi:", error);
+            document.getElementById("result").innerText =
+              "⚠️ Lỗi kết nối đến máy chủ.";
+          });
+      }
+    </script>
+  </body>
+</html>

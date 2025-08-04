@@ -1,2 +1,3 @@
 PyJWT
 finnhub-python
+flask_jwt_extended

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test API Đặt Lệnh</title>
+  </head>
+  <body>
+    <h2>Form Đặt Lệnh (Place Order)</h2>
+    <form id="orderForm">
+      <label for="loai_lenh">Loại lệnh:</label>
+      <select id="loai_lenh" required>
+        <option value="Mua">Mua</option>
+        <option value="Bán">Bán</option>
+      </select>
+      <br /><br />
+
+      <label for="stock_id">Mã cổ phiếu:</label>
+      <input type="text" id="stock_id" value="SSI" required />
+      <br /><br />
+
+      <label for="gia_lenh">Giá lệnh:</label>
+      <input type="number" id="gia_lenh" step="0.01" value="25000" required />
+      <br /><br />
+
+      <label for="so_luong">Số lượng:</label>
+      <input type="number" id="so_luong" value="100" required />
+      <br /><br />
+
+      <button type="submit">Gửi lệnh</button>
+    </form>
+
+    <h3>Kết quả:</h3>
+    <pre id="result"></pre>
+
+    <script>
+      const form = document.getElementById("orderForm");
+      const resultBox = document.getElementById("result");
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const payload = {
+          loai_lenh: document.getElementById("loai_lenh").value,
+          stock_id: document.getElementById("stock_id").value,
+          gia_lenh: parseFloat(document.getElementById("gia_lenh").value),
+          so_luong: parseInt(document.getElementById("so_luong").value),
+        };
+
+        try {
+          const response = await fetch("/api/place", {
+            method: "POST",
+            credentials: "include", // để gửi cookie session
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+          resultBox.textContent = JSON.stringify(data, null, 4);
+        } catch (err) {
+          resultBox.textContent = "❌ Lỗi: " + err.message;
+        }
+      });
+    </script>
+  </body>
+</html>

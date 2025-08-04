@@ -26,15 +26,15 @@ def dashboard():
 
 @views_bp.route('/wallet/deposit')
 def deposit():
-    return render_template('wallet_deposit.html')
+    return render_template('wallet/deposit.html')
 
 @views_bp.route('/wallet/withdraw')
 def withdraw():
-    return render_template('wallet_withdraw.html')
+    return render_template('wallet/withdraw.html')
 
 @views_bp.route('/wallet/history')
 def wallet_history():
-    return render_template('wallet_history.html')
+    return render_template('wallet/history.html')
 
 # ===== 📌 QUẢN LÝ LỆNH GIAO DỊCH =====
 

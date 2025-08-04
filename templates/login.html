@@ -1,39 +1,59 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Đăng nhập</title>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Đăng nhập</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard.css') }}"
+    />
+  </head>
+  <body
+    style="
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <div class="login-container">
+      <h2>Đăng nhập</h2>
+      <input type="text" id="username" placeholder="Tên đăng nhập" />
+      <input type="password" id="password" placeholder="Mật khẩu" />
+      <button onclick="login()">Đăng nhập</button>
+    </div>
 
-  <div class="login-container">
-    <h2>Đăng nhập</h2>
-    <input type="text" id="username" placeholder="Tên đăng nhập">
-    <input type="password" id="password" placeholder="Mật khẩu">
-    <button onclick="login()">Đăng nhập</button>
+    <script>
+      function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
 
-  </div>
-
-  <script>
-    const socket = io();
-
-    function login() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      socket.emit('login', { username, password });
-    }
-
-    socket.on('login_success', (data) => {
-      alert(data.message);
-      localStorage.setItem('token', data.token);
-      window.location.replace('/dashboard');
-    });
-
-    socket.on('login_failed', data => {
-      alert(data.message);
-    });
-  </script>
-</body>
+        fetch("/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+          credentials: "include", // ⚠️ QUAN TRỌNG: để cookie session gửi đi
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.message === "Đăng nhập thành công!") {
+              // ✅ Chuyển hướng sang dashboard nếu login ok
+              window.location.href = "/dashboard";
+            } else {
+              alert(data.message || "Đăng nhập thất bại");
+            }
+          })
+          .catch((err) => {
+            console.error("Lỗi:", err);
+            alert("Lỗi mạng hoặc server");
+          });
+      }
+    </script>
+  </body>
 </html>

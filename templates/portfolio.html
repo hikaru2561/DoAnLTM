@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Portfolio API</title>
+  </head>
+  <body>
+    <h1>Kiểm tra danh mục đầu tư</h1>
+    <button onclick="getPortfolio()">Lấy danh mục</button>
+    <pre id="output"></pre>
+
+    <script>
+      function getPortfolio() {
+        fetch("/portfolio", {
+          method: "GET",
+          credentials: "include", // Gửi session cookie kèm theo
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("output").textContent = JSON.stringify(
+              data,
+              null,
+              2
+            );
+          })
+          .catch((err) => {
+            document.getElementById("output").textContent = "Lỗi: " + err;
+          });
+      }
+    </script>
+  </body>
+</html>
