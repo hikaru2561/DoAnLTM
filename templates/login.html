@@ -1,39 +1,101 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <title>Đăng nhập</title>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <style>
+    body {
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .login-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 300px;
+    }
+
+    .login-container h2 {
+      margin: 0;
+      text-align: center;
+    }
+
+    .login-container input {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .login-container button {
+      padding: 10px;
+      font-size: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .login-container button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
   <div class="login-container">
     <h2>Đăng nhập</h2>
     <input type="text" id="username" placeholder="Tên đăng nhập">
     <input type="password" id="password" placeholder="Mật khẩu">
     <button onclick="login()">Đăng nhập</button>
-
   </div>
 
   <script>
-    const socket = io();
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
 
-    function login() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      socket.emit('login', { username, password });
+      if (!username || !password) {
+        alert('❗ Vui lòng nhập đầy đủ tài khoản và mật khẩu.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const res = await response.json();
+
+        if (res.status === 'success') {
+          alert('✅ ' + res.message);
+          localStorage.setItem('token', res.token); // lưu token nếu cần dùng
+          window.location.replace = '/dashboard';
+        } else {
+          alert('❌ ' + res.message);
+        }
+      } catch (err) {
+        alert('❌ Không thể kết nối tới máy chủ.');
+      }
     }
-
-    socket.on('login_success', (data) => {
-      alert(data.message);
-      localStorage.setItem('token', data.token);
-      window.location.replace('/dashboard');
-    });
-
-    socket.on('login_failed', data => {
-      alert(data.message);
-    });
   </script>
 </body>
+
 </html>

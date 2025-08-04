@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/place_order.css') }}">
+    <style>
+        body {
+            background-color: #12141c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .order-form {
+            background-color: #181a20;
+            color: #fff;
+            width: 360px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .stock-info {
+            border-bottom: 1px solid #333;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stock-name {
+            display: flex;
+            gap: 8px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .price-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .current-price {
+            color: #00ff66;
+        }
+
+        .change {
+            font-size: 13px;
+            color: #00ff66;
+        }
+
+        .session-info {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 6px;
+        }
+
+        .input-section label {
+            display: block;
+            margin: 8px 0 4px;
+            font-size: 13px;
+        }
+
+        select,
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 6px;
+            background-color: #1f222a;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .disabled-input {
+            background-color: #2b2e37;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 18px;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: #00c9af;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        .qty-control {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .qty-control button {
+            width: 30px;
+            background: #2a2d3a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .qty-control input {
+            flex: 1;
+            text-align: center;
+        }
+
+        .price-type button {
+            background-color: #2a2d3a;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+
+        .price-type .selected {
+            background-color: #00c9af;
+        }
+
+        .pin-section {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+
+        .buy {
+            background-color: #00c9af;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 48%;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .sell {
+            background-color: #e74c3c;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 48%;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="order-form">
+        <div class="stock-info">
+            <div class="stock-name">
+                <span class="symbol">SSI</span>
+                <span class="exchange">(HOSE)</span>
+            </div>
+            <div class="price-info">
+                <div class="high">36.35</div>
+                <div class="current-price">34.00 <span class="change">(0.80 2.41%)</span></div>
+                <div class="low">31.65</div>
+            </div>
+            <div class="session-info">• Phiên trước giờ<br>Tổng KL 56,726,000</div>
+        </div>
+
+        <div class="input-section">
+            <label>Tài khoản đặt lệnh</label>
+            <select>
+                <option>Chọn tài khoản</option>
+            </select>
+
+            <label>Sức mua <span class="tooltip">ⓘ</span></label>
+            <div class="disabled-input">0 VND (0/0)</div>
+
+            <label>Giá tự động</label>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider round"></span>
+            </label>
+
+            <label>Khối lượng</label>
+            <div class="qty-control">
+                <button>-</button>
+                <input type="text" value="">
+                <button>+</button>
+            </div>
+
+            <label>Giá (x1000 VND)</label>
+            <div class="qty-control">
+                <button>-</button>
+                <input type="text" value="">
+                <button>+</button>
+            </div>
+        </div>
+        <div>
+            <label>Giá trị</label>
+            <div><span id=""></span> VND</div>
+        </div>
+        <div class="action-buttons">
+            <button class="buy">Mua</button>
+            <button class="sell">Bán</button>
+        </div>
+    </div>
+    <script>
+        function placeOrder() {
+            const loaiLenh = document.querySelector('input[name="orderType"]:checked')?.value;
+            const giaLenh = parseFloat(document.getElementById('orderPrice').value);
+            const soLuong = parseInt(document.getElementById('orderVolume').value);
+            const stockSymbol = document.getElementById('orderSymbol')?.innerText;
+            const stockId = window.currentStockId || 1; // bạn có thể gán từ message
+
+            if (!loaiLenh || isNaN(giaLenh) || isNaN(soLuong)) {
+                alert('Vui lòng điền đầy đủ và đúng định dạng.');
+                return;
+            }
+
+            fetch('/api/place_order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('access_token') // nếu có auth
+                },
+                body: JSON.stringify({
+                    loai_lenh: loaiLenh,
+                    stock_id: stockId,
+                    gia_lenh: giaLenh,
+                    so_luong: soLuong
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.status === 'success') {
+                        // Reset hoặc đóng modal
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Lỗi kết nối máy chủ');
+                });
+        }
+    </script>
+
+</body>
+
+</html>

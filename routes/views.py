@@ -22,6 +22,9 @@ def register():
 def dashboard():
     return render_template('dashboard.html')
 
+@views_bp.route("/detailform")
+def detailform():
+    return render_template("detailform.html")
 # ===== 📌 QUẢN LÝ TÀI CHÍNH =====
 
 @views_bp.route('/wallet/deposit')

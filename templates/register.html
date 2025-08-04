@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <title>Đăng ký</title>
@@ -17,7 +18,7 @@
       background: white;
       padding: 30px 40px;
       border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
       width: 100%;
       max-width: 400px;
     }
@@ -66,6 +67,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="register-container">
     <h2>Đăng ký tài khoản</h2>
@@ -92,56 +94,40 @@
 
   <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   <script>
-    const socket = io();
-    let isConnected = false;
-
-    socket.on('connect', () => {
-      console.log('✅ Socket connected!');
-      isConnected = true;
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error('❌ Socket connection error:', err);
-    });
-
     const form = document.getElementById('registerForm');
-    form.addEventListener('submit', e => {
+    const result = document.getElementById('registerResult');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!isConnected) {
-        alert("⚠️ Chưa kết nối đến máy chủ, vui lòng thử lại sau!");
-        return;
-      }
 
       const formData = new FormData(form);
       const data = Object.fromEntries(formData.entries());
 
-      // 🔧 CHUYỂN GIỚI TÍNH TỪ STRING SANG BOOLEAN
-      data.sex = data.sex === 'True';
+      data.sex = data.sex === 'True'; // Convert sex to boolean
 
-      console.log("📤 Đăng ký gửi:", data);
-      socket.emit('register', data);
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const res = await response.json();
+        result.style.color = res.status === 'success' ? 'green' : 'red';
+        result.innerText = (res.status === 'success' ? '✅ ' : '❌ ') + res.message;
+
+        if (res.status === 'success') {
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        }
+      } catch (err) {
+        result.style.color = 'red';
+        result.innerText = '❌ Lỗi kết nối máy chủ.';
+      }
     });
-
-    socket.on('register_response', (res) => {
-  const result = document.getElementById('registerResult');
-  console.log("📥 Phản hồi:", res);
-  if (res.status === 'success') {
-    result.style.color = 'green';
-    result.innerText = '✅ ' + res.message;
-
-    // 🔄 Gửi sự kiện về trang cha để đóng modal và cập nhật UI
-    setTimeout(() => {
-      window.parent.postMessage({
-        type: 'register_success',
-        username: form.elements['username'].value  // Hoặc res.username nếu backend trả
-      }, '*');
-    }, 1000);
-  } else {
-    result.style.color = 'red';
-    result.innerText = '❌ ' + res.message;
-  }
-});
-
   </script>
+
 </body>
+
 </html>

@@ -2,6 +2,7 @@ from models.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from utils.db import db
 
+
 def register_user(username, password, email):
     if User.query.filter_by(username=username).first():
         return False, "Tài khoản đã tồn tại"

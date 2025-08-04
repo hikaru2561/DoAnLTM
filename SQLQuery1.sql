@@ -6,7 +6,8 @@ USE StockDB;
 GO
 
 -- Bảng người dùng
-CREATE TABLE [User] (
+CREATE TABLE [User]
+(
     ID INT IDENTITY PRIMARY KEY,
     Name NVARCHAR(100),
     hash_pass NVARCHAR(255),
@@ -19,7 +20,8 @@ CREATE TABLE [User] (
 );
 
 -- Bảng cổ phiếu
-CREATE TABLE Stock (
+CREATE TABLE Stock
+(
     ID INT IDENTITY PRIMARY KEY,
     ma_co_phieu NVARCHAR(20),
     ten_cong_ty NVARCHAR(100),
@@ -30,7 +32,8 @@ CREATE TABLE Stock (
 );
 
 -- Giao dịch
-CREATE TABLE Giao_dich (
+CREATE TABLE Giao_dich
+(
     ID INT IDENTITY PRIMARY KEY,
     id_lien_ket_tai_khoan INT,
     userID INT FOREIGN KEY REFERENCES [User](ID),
@@ -39,7 +42,8 @@ CREATE TABLE Giao_dich (
     ngay_giao_dich DATE
 );
 
-CREATE TABLE MarketData (
+CREATE TABLE MarketData
+(
     Symbol VARCHAR(20) PRIMARY KEY,
 
     BidPrice1 FLOAT,
@@ -66,15 +70,16 @@ CREATE TABLE MarketData (
     Floor FLOAT,
     RefPrice FLOAT,
 
-	High Float,
-	Low float,
-	TotalVol float
+    High Float,
+    Low float,
+    TotalVol float
 
 );
 
 
 -- Quỹ người dùng
-CREATE TABLE Quy_nguoi_dung (
+CREATE TABLE Quy_nguoi_dung
+(
     ID INT IDENTITY PRIMARY KEY,
     id_lien_ket_tai_khoan INT,
     userID INT FOREIGN KEY REFERENCES [User](ID),
@@ -84,21 +89,24 @@ CREATE TABLE Quy_nguoi_dung (
 );
 
 -- Chỉ số thị trường
-CREATE TABLE Chi_so_thi_truong (
+CREATE TABLE Chi_so_thi_truong
+(
     ID INT IDENTITY PRIMARY KEY,
     ky_hieu_chi_so NVARCHAR(20),
     ten_chi_so NVARCHAR(100)
 );
 
 -- Thành phần chỉ số
-CREATE TABLE Thanh_phan_chi_so (
+CREATE TABLE Thanh_phan_chi_so
+(
     ID_chi_so_thi_truong INT FOREIGN KEY REFERENCES Chi_so_thi_truong(ID),
     ID_stock INT FOREIGN KEY REFERENCES Stock(ID),
     PRIMARY KEY (ID_chi_so_thi_truong, ID_stock)
 );
 
 -- Danh mục đầu tư
-CREATE TABLE Danh_muc_dau_tu (
+CREATE TABLE Danh_muc_dau_tu
+(
     ID INT IDENTITY PRIMARY KEY,
     ID_user INT FOREIGN KEY REFERENCES [User](ID),
     ID_stock INT FOREIGN KEY REFERENCES Stock(ID),
@@ -107,7 +115,8 @@ CREATE TABLE Danh_muc_dau_tu (
 );
 
 -- Đặt lệnh
-CREATE TABLE Dat_lenh (
+CREATE TABLE Dat_lenh
+(
     ID INT IDENTITY PRIMARY KEY,
     ID_user INT FOREIGN KEY REFERENCES [User](ID),
     ID_stock INT FOREIGN KEY REFERENCES Stock(ID),
@@ -120,7 +129,8 @@ CREATE TABLE Dat_lenh (
 );
 
 -- Chứng quyền có đảm bảo
-CREATE TABLE Chung_quyen_co_dam_bao (
+CREATE TABLE Chung_quyen_co_dam_bao
+(
     ID INT IDENTITY PRIMARY KEY,
     ten_chung_quyen NVARCHAR(100),
     underlyingAssetID INT FOREIGN KEY REFERENCES Stock(ID),
@@ -130,7 +140,8 @@ CREATE TABLE Chung_quyen_co_dam_bao (
 );
 
 -- Dữ liệu thời gian thực
-CREATE TABLE Du_lieu_thoi_gian_thuc (
+CREATE TABLE Du_lieu_thoi_gian_thuc
+(
     stockID INT PRIMARY KEY FOREIGN KEY REFERENCES Stock(ID),
     current_price DECIMAL(18,2),
     bien_dong_gia DECIMAL(5,2),
@@ -144,7 +155,8 @@ CREATE TABLE Du_lieu_thoi_gian_thuc (
 );
 
 -- Thông báo
-CREATE TABLE Thong_bao (
+CREATE TABLE Thong_bao
+(
     ID INT IDENTITY PRIMARY KEY,
     ID_user INT FOREIGN KEY REFERENCES [User](ID),
     loai_thong_bao NVARCHAR(100),
@@ -152,7 +164,8 @@ CREATE TABLE Thong_bao (
     trang_thai NVARCHAR(20),
     thoi_gian DATETIME
 );
-INSERT INTO [User] (
+INSERT INTO [User]
+    (
     Name,
     hash_pass,
     email,
@@ -161,14 +174,15 @@ INSERT INTO [User] (
     birthday,
     country,
     sex
-)
-VALUES (
-    N'Lê Thị B',
-    'abc123_hashed_password',  -- nên hash khi thực tế
-    'lethib@example.com',
-    '0912345678',
-    'lethib',
-    '2000-10-20',
-    N'Việt Nam',
-    0 -- 0 = nữ, 1 = nam
+    )
+VALUES
+    (
+        N'Lê Thị B',
+        'abc123_hashed_password', -- nên hash khi thực tế
+        'lethib@example.com',
+        '0912345678',
+        'lethib',
+        '2000-10-20',
+        N'Việt Nam',
+        0 -- 0 = nữ, 1 = nam
 );

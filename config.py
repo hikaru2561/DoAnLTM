@@ -10,7 +10,7 @@ import os
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "default-key")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI", "mssql+pyodbc://K9\\K9/StockDB?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI", "mssql+pyodbc://LAPTOP-P38G42DU\\SQLEXPRESS/StockDB?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     FINNHUB_API_KEY = "d25pal9r01qhge4dnq40d25pal9r01qhge4dnq4g"

@@ -2,502 +2,575 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>WebSocket Table</title>
-    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <script src="https://unpkg.com/feather-icons"></script>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
+  <meta charset="UTF-8">
+  <title>WebSocket Table</title>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/detailformstock.css') }}">
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    /* Style chung giữ nguyên */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
 
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 4px 8px;
-            text-align: center;
-        }
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      text-align: center;
+    }
 
-        th {
-            background-color: #f0f0f0;
-        }
-    </style>
+    th {
+      background-color: #f0f0f0;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="header-bar">
+  <div class="header-bar">
     <div class="logo-section">
-        <div class="logo-icon">QQT</div>
+      <div class="logo-icon">QQT</div>
     </div>
 
     <div class="right-section">
-        <!-- Đồng hồ -->
-        <span class="clock" id="clock">--:--:--</span>
+      <!-- Đồng hồ -->
+      <span class="clock" id="clock">--:--:--</span>
 
-        <div class="icon-wrapper" title="Thông báo">
-    <i data-feather="bell"></i>
-</div>
+      <div class="icon-wrapper" title="Thông báo">
+        <i data-feather="bell"></i>
+      </div>
 
-<!-- Biểu tượng đổi nền (mặt trời) -->
-<div class="icon-wrapper" title="Màu nền">
-    <i data-feather="sun"></i>
-</div>
+      <!-- Biểu tượng đổi nền (mặt trời) -->
+      <div class="icon-wrapper" title="Màu nền">
+        <i data-feather="sun"></i>
+      </div>
 
-    <!-- Ngôn ngữ -->
-    <div class="lang-dropdown">
+      <!-- Ngôn ngữ -->
+      <div class="lang-dropdown">
         <button class="icon-wrapper lang-btn" title="Ngôn ngữ">
-            <img src="https://flagcdn.com/h40/vn.png" class="flag-icon-round" alt="VN">
+          <img src="https://flagcdn.com/h40/vn.png" class="flag-icon-round" alt="VN">
         </button>
         <div class="lang-menu">
-            <div class="lang-item"><img src="https://flagcdn.com/h40/us.png" alt="EN"> English</div>
-            <!-- <div class="lang-item"><img src="https://flagcdn.com/h40/vn.png" alt="VN"> Tiếng Việt</div> -->
-            <div class="lang-item"><img src="https://flagcdn.com/h40/cn.png" alt="CN"> 中文 (Chinese)</div>
+          <div class="lang-item"><img src="https://flagcdn.com/h40/us.png" alt="EN"> English</div>
+          <!-- <div class="lang-item"><img src="https://flagcdn.com/h40/vn.png" alt="VN"> Tiếng Việt</div> -->
+          <div class="lang-item"><img src="https://flagcdn.com/h40/cn.png" alt="CN"> 中文 (Chinese)</div>
         </div>
-    </div>
-        <!-- Các nút tài khoản -->
-        <button id="openAccountBtn" class="open-account" onclick="openRegisterModal()">Mở tài khoản</button>
-<button id="loginBtn" onclick="openLoginModal()">Đăng nhập</button>
+      </div>
+      <!-- Các nút tài khoản -->
+      <button id="openAccountBtn" class="open-account" onclick="openRegisterModal()">Mở tài khoản</button>
+      <button id="loginBtn" onclick="openLoginModal()">Đăng nhập</button>
 
-<!-- Hiển thị sau khi đăng nhập -->
-<div id="userInfo" style="display: none; margin-left: 10px; font-weight: bold;">
-  Xin chào, <span id="usernameDisplay"></span>
-  <button id="logoutBtn" onclick="logout()" style="margin-left: 10px; padding: 5px 10px;">Đăng xuất</button>
-</div>
+      <!-- Hiển thị sau khi đăng nhập -->
+      <div id="userInfo" style="display: none; margin-left: 10px; font-weight: bold;">
+        Xin chào, <span id="usernameDisplay"></span>
+        <button id="logoutBtn" onclick="logout()" style="margin-left: 10px; padding: 5px 10px;">Đăng xuất</button>
+      </div>
     </div>
-</div>
- <!-- 🔺 Submenu theo yêu cầu -->
-    <div class="submenu">
+  </div>
+  <!-- 🔺 Submenu theo yêu cầu -->
+  <div class="submenu">
     <ul class="submenu-list">
-       <li class="nav-item">
-  <a href="#" class="nav-link">Bảng giá</a>
-</li>
+      <li class="nav-item">
+        <a href="#" class="nav-link">Bảng giá</a>
+      </li>
       <li class="nav-item dropdown">
-  <a href="#" class="nav-link">
-    Giao dịch cơ sở
-    <i class="arrow-down" data-feather="chevron-down"></i>
-  </a>
-  <div class="dropdown-menu mega-menu">
-    <div class="dropdown-column">
-      <div class="dropdown-item">
-        <i data-feather="arrow-right-circle"></i>
-        <div>
-          <strong>Đặt lệnh</strong>
-          <span>Đặt lệnh mua bán chứng khoán trên thị trường cơ sở</span>
+        <a href="#" class="nav-link">
+          Giao dịch cơ sở
+          <i class="arrow-down" data-feather="chevron-down"></i>
+        </a>
+        <div class="dropdown-menu mega-menu">
+          <div class="dropdown-column">
+            <div class="dropdown-item">
+              <i data-feather="arrow-right-circle"></i>
+              <div>
+                <strong>Đặt lệnh</strong>
+                <span>Đặt lệnh mua bán chứng khoán trên thị trường cơ sở</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="edit-2"></i>
+              <div>
+                <strong>Đặt lệnh điều kiện</strong>
+                <span>Thiết lập điều kiện kích hoạt lệnh tự động</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="list"></i>
+              <div>
+                <strong>Danh mục</strong>
+                <span>Theo dõi danh mục cổ phiếu đang đầu tư</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="book"></i>
+              <div>
+                <strong>Sổ lệnh</strong>
+                <span>Theo dõi trạng thái lệnh trong phiên</span>
+              </div>
+            </div>
+          </div>
+          <div class="dropdown-column">
+            <div class="dropdown-item">
+              <i data-feather="shuffle"></i>
+              <div>
+                <strong>Chuyển chứng khoán</strong>
+                <span>Chuyển chứng khoán giữa các tiểu khoản</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="plus-square"></i>
+              <div>
+                <strong>Thông tin quyền</strong>
+                <span>Tra cứu quyền mua & đăng ký</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="shield"></i>
+              <div>
+                <strong>IPO Chứng quyền</strong>
+                <span>Đăng ký IPO chứng quyền tại SSI</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="clock"></i>
+              <div>
+                <strong>Lịch sử lệnh</strong>
+                <span>Xem thông tin các lệnh đã đặt</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="edit-2"></i>
-        <div>
-          <strong>Đặt lệnh điều kiện</strong>
-          <span>Thiết lập điều kiện kích hoạt lệnh tự động</span>
+      </li>
+      <li class="nav-item dropdown">
+        <a href="#" class="nav-link">
+          Quản lý tài sản
+          <i class="arrow-down" data-feather="chevron-down"></i>
+        </a>
+        <div class="dropdown-menu mega-menu one-column">
+          <div class="dropdown-column">
+            <div class="dropdown-item">
+              <i data-feather="star"></i>
+              <div>
+                <strong>Tài sản & Hiệu suất đầu tư</strong>
+                <span class="desc">Thông tin toàn cảnh về tài sản và hiệu quả đầu tư theo thời gian</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="check-circle"></i>
+              <div>
+                <strong>Lãi/lỗ theo giao dịch</strong>
+                <span class="desc">Theo dõi lịch sử lãi/lỗ đã thực hiện theo từng mã cổ phiếu</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="list"></i>
-        <div>
-          <strong>Danh mục</strong>
-          <span>Theo dõi danh mục cổ phiếu đang đầu tư</span>
+      </li>
+      <li class="nav-item dropdown">
+        <a href="#" class="nav-link">
+          Giao dịch tiền
+          <i class="arrow-down" data-feather="chevron-down"></i>
+        </a>
+        <div class="dropdown-menu mega-menu">
+          <div class="dropdown-column">
+            <div class="dropdown-item">
+              <i data-feather="arrow-right-circle"></i>
+              <div>
+                <strong>Nạp tiền vào tài khoản</strong>
+                <span>Nạp tiền vào tài khoản giao dịch chứng khoán</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="refresh-cw"></i>
+              <div>
+                <strong>Chuyển tiền nội bộ</strong>
+                <span>Chuyển tiền giữa các tài khoản tại SSI</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="corner-down-right"></i>
+              <div>
+                <strong>Ứng trước tiền bán</strong>
+                <span>Ứng trước để sử dụng dòng tiền đầu tư</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="bank"></i>
+              <div>
+                <strong>Chuyển tiền ra ngân hàng</strong>
+                <span>Chuyển từ tài khoản chứng khoán ra ngân hàng</span>
+              </div>
+            </div>
+          </div>
+          <div class="dropdown-column">
+            <div class="dropdown-item">
+              <i data-feather="arrow-left-right"></i>
+              <div>
+                <strong>Nộp/Rút ký quỹ phái sinh</strong>
+                <span>Nộp/rút ký quỹ VSDC cho giao dịch phái sinh</span>
+              </div>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="download"></i>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <strong>Rút tiền bán chờ về TK ký quỹ</strong>
+                <span class="tag-new">MỚI</span>
+              </div>
+              <span>Theo dõi, thiết lập lệnh rút tiền chờ</span>
+            </div>
+            <div class="dropdown-item">
+              <i data-feather="file-text"></i>
+              <div>
+                <strong>Sao kê tiền</strong>
+                <span>Theo dõi biến động dòng tiền</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="book"></i>
-        <div>
-          <strong>Sổ lệnh</strong>
-          <span>Theo dõi trạng thái lệnh trong phiên</span>
-        </div>
-      </div>
-    </div>
-    <div class="dropdown-column">
-      <div class="dropdown-item">
-        <i data-feather="shuffle"></i>
-        <div>
-          <strong>Chuyển chứng khoán</strong>
-          <span>Chuyển chứng khoán giữa các tiểu khoản</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="plus-square"></i>
-        <div>
-          <strong>Thông tin quyền</strong>
-          <span>Tra cứu quyền mua & đăng ký</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="shield"></i>
-        <div>
-          <strong>IPO Chứng quyền</strong>
-          <span>Đăng ký IPO chứng quyền tại SSI</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="clock"></i>
-        <div>
-          <strong>Lịch sử lệnh</strong>
-          <span>Xem thông tin các lệnh đã đặt</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</li>
-       <li class="nav-item dropdown">
-  <a href="#" class="nav-link">
-    Quản lý tài sản
-    <i class="arrow-down" data-feather="chevron-down"></i>
-  </a>
-  <div class="dropdown-menu mega-menu one-column">
-    <div class="dropdown-column">
-      <div class="dropdown-item">
-        <i data-feather="star"></i>
-        <div>
-          <strong>Tài sản & Hiệu suất đầu tư</strong>
-          <span class="desc">Thông tin toàn cảnh về tài sản và hiệu quả đầu tư theo thời gian</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="check-circle"></i>
-        <div>
-          <strong>Lãi/lỗ theo giao dịch</strong>
-          <span class="desc">Theo dõi lịch sử lãi/lỗ đã thực hiện theo từng mã cổ phiếu</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</li>
-        <li class="nav-item dropdown">
-  <a href="#" class="nav-link">
-    Giao dịch tiền
-    <i class="arrow-down" data-feather="chevron-down"></i>
-  </a>
-  <div class="dropdown-menu mega-menu">
-    <div class="dropdown-column">
-      <div class="dropdown-item">
-        <i data-feather="arrow-right-circle"></i>
-        <div>
-          <strong>Nạp tiền vào tài khoản</strong>
-          <span>Nạp tiền vào tài khoản giao dịch chứng khoán</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="refresh-cw"></i>
-        <div>
-          <strong>Chuyển tiền nội bộ</strong>
-          <span>Chuyển tiền giữa các tài khoản tại SSI</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="corner-down-right"></i>
-        <div>
-          <strong>Ứng trước tiền bán</strong>
-          <span>Ứng trước để sử dụng dòng tiền đầu tư</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="bank"></i>
-        <div>
-          <strong>Chuyển tiền ra ngân hàng</strong>
-          <span>Chuyển từ tài khoản chứng khoán ra ngân hàng</span>
-        </div>
-      </div>
-    </div>
-    <div class="dropdown-column">
-      <div class="dropdown-item">
-        <i data-feather="arrow-left-right"></i>
-        <div>
-          <strong>Nộp/Rút ký quỹ phái sinh</strong>
-          <span>Nộp/rút ký quỹ VSDC cho giao dịch phái sinh</span>
-        </div>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="download"></i>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <strong>Rút tiền bán chờ về TK ký quỹ</strong>
-          <span class="tag-new">MỚI</span>
-        </div>
-        <span>Theo dõi, thiết lập lệnh rút tiền chờ</span>
-      </div>
-      <div class="dropdown-item">
-        <i data-feather="file-text"></i>
-        <div>
-          <strong>Sao kê tiền</strong>
-          <span>Theo dõi biến động dòng tiền</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</li>
+      </li>
     </ul>
-</div>
-<div style="display: flex; align-items: center; gap: 12px; margin: 10px 0;">
-  <!-- 🔍 Ô tìm kiếm CK -->
-  <div style="position: relative;">
-    <input type="text" id="stockSearch" placeholder="Tìm kiếm CK" style="padding: 6px 30px 6px 30px; border-radius: 6px; border: 1px solid #ccc;">
-    <i data-feather="search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px; margin: 10px 0;">
+    <!-- 🔍 Ô tìm kiếm CK -->
+    <div style="position: relative;">
+      <input type="text" id="stockSearch" placeholder="Tìm kiếm CK"
+        style="padding: 6px 30px 6px 30px; border-radius: 6px; border: 1px solid #ccc;">
+      <i data-feather="search"
+        style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+    </div>
+
+    <!-- Nhóm nút sàn -->
+    <div class="btn-group" role="group" aria-label="Chọn sàn/chỉ số">
+      <button onclick="handleExchangeClick('HOSE')" class="btn btn-primary">HOSE</button>
+      <button onclick="handleExchangeClick('HNX')" class="btn btn-primary">HNX</button>
+      <button onclick="handleExchangeClick('UPCOM')" class="btn btn-primary">UPCOM</button>
+      <button onclick="handleExchangeClick('VN30')" class="btn btn-success">VN30</button>
+      <button onclick="handleExchangeClick('VN100')" class="btn btn-success">VN100</button>
+      <button onclick="handleExchangeClick('HNX30')" class="btn btn-success">HNX30</button>
+    </div>
   </div>
 
-  <!-- Nhóm nút sàn -->
-  <div class="btn-group" role="group" aria-label="Chọn sàn/chỉ số">
-    <button onclick="handleExchangeClick('HOSE')" class="btn btn-primary">HOSE</button>
-    <button onclick="handleExchangeClick('HNX')" class="btn btn-primary">HNX</button>
-    <button onclick="handleExchangeClick('UPCOM')" class="btn btn-primary">UPCOM</button>
-    <button onclick="handleExchangeClick('VN30')" class="btn btn-success">VN30</button>
-    <button onclick="handleExchangeClick('VN100')" class="btn btn-success">VN100</button>
-    <button onclick="handleExchangeClick('HNX30')" class="btn btn-success">HNX30</button>
-  </div>
-</div>
 
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th rowspan="2">CK</th>
+        <th rowspan="2">Trần</th>
+        <th rowspan="2">Sàn</th>
+        <th rowspan="2">TC</th>
+        <th colspan="6">Bên mua</th>
+        <th colspan="4">Khớp lệnh</th>
+        <th colspan="6">Bên bán</th>
+        <th rowspan="2">Tổng KL</th>
+        <th rowspan="2">Cao</th>
+        <th rowspan="2">Thấp</th>
+      </tr>
+      <tr>
+        <th>Giá 3</th>
+        <th>KL 3</th>
+        <th>Giá 2</th>
+        <th>KL 2</th>
+        <th>Giá 1</th>
+        <th>KL 1</th>
+        <th>Giá</th>
+        <th>KL</th>
+        <th>+/-</th>
+        <th>+/- (%)</th>
+        <th>Giá 1</th>
+        <th>KL 1</th>
+        <th>Giá 2</th>
+        <th>KL 2</th>
+        <th>Giá 3</th>
+        <th>KL 3</th>
+      </tr>
+    </thead>
+    <tbody id="data-body">
+    </tbody>
+  </table>
 
-    <table id="data-table">
-        <thead>
-  <tr>
-  <th rowspan="2">CK</th>
-  <th rowspan="2">Trần</th>
-  <th rowspan="2">Sàn</th>
-  <th rowspan="2">TC</th>
-  <th colspan="6">Bên mua</th>
-  <th colspan="4">Khớp lệnh</th>
-  <th colspan="6">Bên bán</th>
-  <th rowspan="2">Tổng KL</th>
-  <th rowspan="2">Cao</th>
-  <th rowspan="2">Thấp</th>
-</tr>
-<tr>
-  <th>Giá 3</th><th>KL 3</th><th>Giá 2</th><th>KL 2</th><th>Giá 1</th><th>KL 1</th>
-  <th>Giá</th><th>KL</th><th>+/-</th><th>+/- (%)</th>
-  <th>Giá 1</th><th>KL 1</th><th>Giá 2</th><th>KL 2</th><th>Giá 3</th><th>KL 3</th>
-</tr>
-</thead>
-        <tbody id="data-body">
-        </tbody>
-    </table>
+  <script>
+    var socket = io();
+    const dataMap = {};
+    // 👉 Gắn sự kiện sau khi DOM đã có bảng
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("data-body").addEventListener("click", function (e) {
+        const cell = e.target.closest("td");
+        if (!cell) return;
 
-    <script>
-        var socket = io();
-        const dataMap = {};
+        // Chỉ xử lý nếu ô có class symbol-cell
+        if (cell.classList.contains("symbol-cell")) {
+          const symbol = cell.dataset.symbol;
+          const item = dataMap[symbol];
+          if (item) {
+            showStockModal(item);
+          }
+        }
+      });
+    });
+    socket.on('connect', function () {
+      console.log('Connected to server');
+    });
 
-        socket.on('connect', function () {
-            console.log('Connected to server');
-        });
+    socket.on('server_data', function (data) {
+      try {
+        const parsedData = JSON.parse(data);
+        const symbol = parsedData.Symbol;
+        if (!symbol) return;
 
-        socket.on('server_data', function (data) {
-            try {
-                const parsedData = JSON.parse(data);
-                const symbol = parsedData.Symbol;
-                if (!symbol) return;
+        dataMap[symbol] = parsedData;
+        updateTable();
 
-                dataMap[symbol] = parsedData;
-                updateTable();
+      } catch (e) {
+        console.error('Invalid JSON:', data);
+      }
+    });
 
-            } catch (e) {
-                console.error('Invalid JSON:', data);
-            }
-        });
+    function updateTable() {
+      const tbody = document.getElementById('data-body');
+      tbody.innerHTML = ''; // Clear previous
 
-        function updateTable() {
-    const tbody = document.getElementById('data-body');
-    tbody.innerHTML = ''; // Clear previous
+      // Sắp xếp theo A-Z
+      const sortedData = Object.values(dataMap).sort((a, b) => a.Symbol.localeCompare(b.Symbol));
 
-    // Sắp xếp theo A-Z
-    const sortedData = Object.values(dataMap).sort((a, b) => a.Symbol.localeCompare(b.Symbol));
-
-    sortedData.forEach(item => {
+      sortedData.forEach(item => {
         const row = document.createElement('tr');
 
         const fields = [
-            "Symbol", "Ceiling", "Floor", "RefPrice",
-            "BidPrice3", "BidVol3",
-            "BidPrice2", "BidVol2",
-            "BidPrice1", "BidVol1",
-            "LastPrice", "LastVol", "Change", "RatioChange",
-            "AskPrice1", "AskVol1",
-            "AskPrice2", "AskVol2",
-            "AskPrice3", "AskVol3",
-            "TotalVol", "High", "Low"
+          "Symbol", "Ceiling", "Floor", "RefPrice",
+          "BidPrice3", "BidVol3",
+          "BidPrice2", "BidVol2",
+          "BidPrice1", "BidVol1",
+          "LastPrice", "LastVol", "Change", "RatioChange",
+          "AskPrice1", "AskVol1",
+          "AskPrice2", "AskVol2",
+          "AskPrice3", "AskVol3",
+          "TotalVol", "High", "Low"
         ];
 
         fields.forEach(field => {
-            const cell = document.createElement('td');
-            const value = item[field];
+          const cell = document.createElement('td');
+          const value = item[field];
+          if (field === "Symbol") {
 
-            if (typeof value === 'number') {
-                if (field.includes("Price") || field === "Ceiling" || field === "Floor" || field === "RefPrice" || field === "LastPrice" || field === "High" || field === "Low" || field.includes("AskPrice") || field.includes("BidPrice")) {
-                    // Giá chia 1000
-                    cell.textContent = (value / 1000).toFixed(2);
-                } else if (field.includes("Vol") || field === "TotalVol" || field === "LastVol") {
-                    // Khối lượng giữ nguyên, format số có dấu phẩy
-                    cell.textContent = value.toLocaleString("en-US");
-                } else if (field === "Change" || field === "RatioChange") {
-                    // Tăng/giảm tuyệt đối và phần trăm
-                    const display = (value > 0 ? '+' : '') + value.toFixed(2);
-                    cell.textContent = field === "RatioChange" ? display + '%' : display;
-                    cell.style.color = value > 0 ? 'limegreen' : value < 0 ? 'red' : '#333';
-                } else {
-                    cell.textContent = value;
-                }
+            cell.classList.add("symbol-cell"); // 👈 Đánh dấu class
+            cell.dataset.symbol = item.Symbol; // 👈 Lưu symbol để lấy khi click
+          }
+          if (typeof value === 'number') {
+            if (field.includes("Price") || field === "Ceiling" || field === "Floor" || field === "RefPrice" || field === "LastPrice" || field === "High" || field === "Low" || field.includes("AskPrice") || field.includes("BidPrice")) {
+              // Giá chia 1000
+              cell.textContent = (value / 1000).toFixed(2);
+            } else if (field.includes("Vol") || field === "TotalVol" || field === "LastVol") {
+              // Khối lượng giữ nguyên, format số có dấu phẩy
+              cell.textContent = value.toLocaleString("en-US");
+            } else if (field === "Change" || field === "RatioChange") {
+              // Tăng/giảm tuyệt đối và phần trăm
+              const display = (value > 0 ? '+' : '') + value.toFixed(2);
+              cell.textContent = field === "RatioChange" ? display + '%' : display;
+              cell.style.color = value > 0 ? 'limegreen' : value < 0 ? 'red' : '#333';
             } else {
-                cell.textContent = value || "";
+              cell.textContent = value;
             }
+          } else {
+            cell.textContent = value || "";
+          }
 
-            row.appendChild(cell);
+          row.appendChild(cell);
         });
 
         tbody.appendChild(row);
-    });
-}
-
-function handleExchangeClick(exchangeName) {
-    // 🧹 Xoá dữ liệu cũ
-    for (const key in dataMap) {
-        delete dataMap[key];
+      });
     }
-    document.getElementById('data-body').innerHTML = '';
 
-    socket.emit('button_click', { exchange: exchangeName });
-    console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
-}   
+    function handleExchangeClick(exchangeName) {
+      // 🧹 Xoá dữ liệu cũ
+      for (const key in dataMap) {
+        delete dataMap[key];
+      }
+      document.getElementById('data-body').innerHTML = '';
 
-        socket.on('disconnect', function () {
-            console.log('Disconnected from server');
-        });
-    </script>
-    <div id="loginModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999;">
-  <div class="modal-content" style="background: white; border-radius: 10px; width: 500px; height: 420px; position: relative; overflow: hidden; padding: 30px;">
-    <button class="close-btn" onclick="closeLoginModal()" style="position: absolute; top: 10px; right: 15px; font-size: 22px; background: none; border: none; cursor: pointer; z-index: 10;">×</button>
-    
-    <h2 style="text-align: center;">Đăng nhập</h2>
-    <form id="loginForm" style="margin-top: 30px;">
-      <label for="username">Tên đăng nhập:</label>
-      <input type="text" id="username" name="username" required style="width: 100%; padding: 10px; margin-bottom: 15px;">
+      socket.emit('button_click', { exchange: exchangeName });
+      console.log("📤 Đã gửi yêu cầu button_click:", exchangeName);
+    }
 
-      <label for="password">Mật khẩu:</label>
-      <input type="password" id="password" name="password" required style="width: 100%; padding: 10px; margin-bottom: 15px;">
-
-      <button type="submit" style="width: 100%; padding: 12px; background: #e60000; color: white; border: none; border-radius: 5px; cursor: pointer;">Đăng nhập</button>
-    </form>
+    socket.on('disconnect', function () {
+      console.log('Disconnected from server');
+    });
+  </script>
+  <div id="loginModal" class="modal-overlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999;">
+    <div class="modal-content"
+      style="background: white; border-radius: 10px; width: 500px; height: 580px; position: relative; overflow: hidden;">
+      <button class="close-btn" onclick="closeLoginModal()"
+        style="position: absolute; top: 10px; right: 15px; font-size: 22px; background: none; border: none; cursor: pointer; z-index: 10;">×</button>
+      <iframe src="/login" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
   </div>
-</div>
 
-<div id="registerModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999;">
-  <div class="modal-content" style="background: white; border-radius: 10px; width: 500px; height: 580px; position: relative; overflow: hidden;">
-    <button class="close-btn" onclick="closeRegisterModal()" style="position: absolute; top: 10px; right: 15px; font-size: 22px; background: none; border: none; cursor: pointer; z-index: 10;">×</button>
-    <iframe src="/register" style="width: 100%; height: 100%; border: none;"></iframe>
+  <!-- 🔍 Modal hiển thị thông tin chi tiết CK -->
+  <div id="stockModal" class="modal-overlay-detail-form">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeStockModal()">×</button>
+      <iframe src="/detailform" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
   </div>
-</div>
-    <script>
-        
+
+  <script>
+    function showStockModal(item) {
+      const modal = document.getElementById('stockModal');
+      const iframe = modal.querySelector('iframe');
+
+      modal.style.display = 'flex';
+
+      // Bắt sự kiện load lần đầu
+      iframe.onload = function () {
+        iframe.contentWindow.postMessage({
+          type: 'update_stock_detail',
+          payload: item
+        }, '*');
+      };
+
+      // Nếu iframe đã load từ trước (không thay src nữa), gửi luôn
+      if (iframe.contentWindow && iframe.src.includes('/detailform')) {
+        // Delay nhẹ để đảm bảo iframe đã ready
+        setTimeout(() => {
+          iframe.contentWindow.postMessage({
+            type: 'update_stock_detail',
+            payload: item
+          }, '*');
+        }, 100);
+      }
+    }
+
+
+
+    function closeStockModal() {
+      document.getElementById('stockModal').style.display = 'none';
+    }
+  </script>
+
+  <div id="registerModal" class="modal-overlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999;">
+    <div class="modal-content"
+      style="background: white; border-radius: 10px; width: 500px; height: 580px; position: relative; overflow: hidden;">
+      <button class="close-btn" onclick="closeRegisterModal()"
+        style="position: absolute; top: 10px; right: 15px; font-size: 22px; background: none; border: none; cursor: pointer; z-index: 10;">×</button>
+      <iframe src="/register" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+  </div>
+  <script>
+
     function updateClock() {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const s = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById("clock").textContent = `${h}:${m}:${s}`;
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById("clock").textContent = `${h}:${m}:${s}`;
     }
     setInterval(updateClock, 1000);
     updateClock();
 
     document.addEventListener('DOMContentLoaded', () => {
-        const langBtn = document.querySelector('.lang-btn');
-        const langMenu = document.querySelector('.lang-menu');
+      const langBtn = document.querySelector('.lang-btn');
+      const langMenu = document.querySelector('.lang-menu');
 
-        langBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            langMenu.style.display = langMenu.style.display === 'block' ? 'none' : 'block';
-        });
+      langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langMenu.style.display = langMenu.style.display === 'block' ? 'none' : 'block';
+      });
 
-        document.addEventListener('click', () => {
-            langMenu.style.display = 'none';
-        });
+      document.addEventListener('click', () => {
+        langMenu.style.display = 'none';
+      });
     });
-</script>
-<script>
+  </script>
+  <script>
     feather.replace();
-</script>
-<script>
-  function openLoginModal() {
-  document.getElementById('loginModal').style.display = 'flex';
-}
+  </script>
+  <script>
+    function openLoginModal() {
+      document.getElementById('loginModal').style.display = 'flex';
+    }
 
-function closeLoginModal() {
-  document.getElementById('loginModal').style.display = 'none';
-}
+    function closeLoginModal() {
+      document.getElementById('loginModal').style.display = 'none';
+    }
 
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  socket.emit('login', { username, password });
-});
-
-socket.on('login_success', function(data) {
-  closeLoginModal();
-
-  // Hiển thị phần chào và đăng xuất
-  document.getElementById('usernameDisplay').innerText = data.username;
-  document.getElementById('userInfo').style.display = 'inline-block';
-
-  // Ẩn các nút cho khách
-  document.getElementById('loginBtn').style.display = 'none';
-  document.getElementById('openAccountBtn').style.display = 'none';
-});
-
-socket.on('login_failed', function(data) {
-  alert(data.message);
-});
-</script>
-<script>
-  function openRegisterModal() {
-    document.getElementById('registerModal').style.display = 'flex';
-  }
-
-  function closeRegisterModal() {
-    document.getElementById('registerModal').style.display = 'none';
-  }
-</script>
-<script>
-function logout() {
-  // Gửi yêu cầu đăng xuất nếu cần (socket.emit('logout'))
-
-  // Ẩn thông tin người dùng
-  document.getElementById('userInfo').style.display = 'none';
-
-  // Hiện lại các nút cho khách
-  document.getElementById('loginBtn').style.display = 'inline-block';
-  document.getElementById('openAccountBtn').style.display = 'inline-block';
-
-  // Xóa tên người dùng hiển thị
-  document.getElementById('usernameDisplay').innerText = '';
-}
-</script>
-<script>
-window.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'register_success') {
-    const username = event.data.username;
-
-    // Đóng modal đăng ký
-    closeRegisterModal();
-
-    // Cập nhật UI chính
-    document.getElementById('usernameDisplay').innerText = username;
-    document.getElementById('userInfo').style.display = 'inline-block';
-    document.getElementById('loginBtn').style.display = 'none';
-    document.getElementById('openAccountBtn').style.display = 'none';
-  }
-
-   document.getElementById('stockSearch').addEventListener('input', function () {
-    const keyword = this.value.trim().toUpperCase();
-    const rows = document.querySelectorAll('#data-body tr');
-
-    rows.forEach(row => {
-      const symbolCell = row.querySelector('td');
-      const symbol = symbolCell?.textContent.toUpperCase() || '';
-      row.style.display = symbol.includes(keyword) ? '' : 'none';
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      socket.emit('login', { username, password });
     });
-  });
-});
-window.onload = function () {
-    handleExchangeClick('VN30');
+
+    socket.on('login_success', function (data) {
+      closeLoginModal();
+
+      // Hiển thị phần chào và đăng xuất
+      document.getElementById('usernameDisplay').innerText = data.username;
+      document.getElementById('userInfo').style.display = 'inline-block';
+
+      // Ẩn các nút cho khách
+      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('openAccountBtn').style.display = 'none';
+    });
+
+    socket.on('login_failed', function (data) {
+      alert(data.message);
+    });
+  </script>
+  <script>
+    function openRegisterModal() {
+      document.getElementById('registerModal').style.display = 'flex';
+    }
+    function closeRegisterModal() {
+      document.getElementById('registerModal').style.display = 'none';
+    }
+  </script>
+  <script>
+    function logout() {
+      // Gửi yêu cầu đăng xuất nếu cần (socket.emit('logout'))
+      // Ẩn thông tin người dùng
+      document.getElementById('userInfo').style.display = 'none';
+
+      // Hiện lại các nút cho khách
+      document.getElementById('loginBtn').style.display = 'inline-block';
+      document.getElementById('openAccountBtn').style.display = 'inline-block';
+
+      // Xóa tên người dùng hiển thị
+      document.getElementById('usernameDisplay').innerText = '';
+    }
+  </script>
+  <script>
+    window.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'register_success') {
+        const username = event.data.username;
+
+        // Đóng modal đăng ký
+        closeRegisterModal();
+
+        // Cập nhật UI chính
+        document.getElementById('usernameDisplay').innerText = username;
+        document.getElementById('userInfo').style.display = 'inline-block';
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('openAccountBtn').style.display = 'none';
+      }
+
+      document.getElementById('stockSearch').addEventListener('input', function () {
+        const keyword = this.value.trim().toUpperCase();
+        const rows = document.querySelectorAll('#data-body tr');
+
+        rows.forEach(row => {
+          const symbolCell = row.querySelector('td');
+          const symbol = symbolCell?.textContent.toUpperCase() || '';
+          row.style.display = symbol.includes(keyword) ? '' : 'none';
+        });
+      });
+    });
+    window.onload = function () {
+      handleExchangeClick('VN30');
     };
-</script>
+  </script>
 </body>
+
 </html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Detail Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detailformstock.css') }}">
+
+</head>
+
+<body>
+    <form id="stockDetailForm" aria-label="Stock Detail Form">
+        <div class="stock-detail-header">
+            <h2>Chi tiết cổ phiếu <span id="modalSymbol"></span></h2>
+        </div>
+        <div class="stock-detail-overview">
+            <div class="stock-detail-quote">
+                <h3>
+                    <span id="stock-detail-form-price">23.00</span>
+                    <span id="stock-detail-form-variation">0.00%</span>
+                </h3>
+                <p>
+                    Mở Cửa/Trung bình: <span id="stock-detail-form-open-range">23.00/22.91</span><br>
+                    Thấp/Cao: <span id="stock-detail-form-range">22.80/23.05</span><br>
+                    Tổng KL: <span id="stock-detail-form-volume-total">7,316,600</span>
+                </p>
+            </div>
+            <div class="stock-detail-metrics">
+                <p>
+                    Trần: <span id="stock-detail-form-ceiling" style="color: #F23AFF;">24.60</span><br>
+                    Sàn: <span id="stock-detail-form-floor" style="color: #00C9AF;">21.40</span><br>
+                    Tham chiếu: <span id="stock-detail-form-reference" style="color: #FDFF12;">23.00</span>
+                </p>
+            </div>
+            <div class="stock-detail-bidask">
+                <h4>Độ sâu thị trường</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>KL</th>
+                            <th>Giá bán</th>
+                            <th>KL</th>
+                            <th>Giá mua</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="stock-detail-form-buy-vol-1"></td>
+                            <td id="stock-detail-form-buy-price-1"></td>
+                            <td id="stock-detail-form-sell-vol-1"></td>
+                            <td id="stock-detail-form-sell-price-1"></td>
+                        </tr>
+                        <tr>
+                            <td id="stock-detail-form-buy-vol-2"></td>
+                            <td id="stock-detail-form-buy-price-2"></td>
+                            <td id="stock-detail-form-sell-vol-2"></td>
+                            <td id="stock-detail-form-sell-price-2"></td>
+                        </tr>
+                        <tr>
+                            <td id="stock-detail-form-buy-vol-3"></td>
+                            <td id="stock-detail-form-buy-price-3"></td>
+                            <td id="stock-detail-form-sell-vol-3"></td>
+                            <td id="stock-detail-form-sell-price-3"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="stock-detail-main">
+            <div class="stock-detail-chart">
+                <iframe id="stockIframe" title="SSI TradingView Chart" aria-label="Stock TradingView Chart"></iframe>
+            </div>
+
+            <div class="stock-detail-trades">
+                <div class="stock-info">
+                    <div class="stock-name">
+                        <span class="symbol">SSI</span>
+                        <span class="exchange">(HOSE)</span>
+                    </div>
+                    <div class="price-info">
+                        <div class="high">36.35</div>
+                        <div class="current-price">34.00 <span class="change">(0.80 2.41%)</span></div>
+                        <div class="low">31.65</div>
+                    </div>
+                    <div class="session-info">• Phiên trước giờ<br>Tổng KL 56,726,000</div>
+                </div>
+
+                <div class="input-section">
+                    <label>Tài khoản đặt lệnh</label>
+                    <select>
+                        <option>Chọn tài khoản</option>
+                    </select>
+
+                    <label>Sức mua <span class="tooltip">ⓘ</span></label>
+                    <div class="disabled-input">0 VND (0/0)</div>
+
+                    <label>Giá tự động</label>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+
+                    <label>Khối lượng</label>
+                    <div class="qty-control">
+                        <button>-</button>
+                        <input type="text" value="">
+                        <button>+</button>
+                    </div>
+
+                    <label>Giá (x1000 VND)</label>
+                    <div class="qty-control">
+                        <button>-</button>
+                        <input type="text" value="">
+                        <button>+</button>
+                    </div>
+                </div>
+                <div>
+                    <label>Giá trị</label>
+                    <div><span id=""></span> VND</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="buy">Mua</button>
+                    <button class="sell">Bán</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    <script>
+        // Đặt ngoài onload để luôn nhận được postMessage dù iframe vừa load hay chưa
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+            if (!data || data.type !== 'update_stock_detail') return;
+
+            const item = data.payload;
+            console.log("Received data:", item); // 👉 kiểm tra trên console
+
+            // Gán vào iframe TradingView bên trong
+            const tvIframe = document.getElementById('stockIframe');
+            tvIframe.src = `https://iboard.ssi.com.vn/tradingview/?symbol=${item.Symbol}&language=vi&interval=D&theme=classic&target=tradingViewStockDetail&autoSave=1&forceTVChart=1&showVolume=1&timescaleMarks=1&sameDomain=1`;
+
+            // Cập nhật nội dung
+            document.getElementById('modalSymbol').innerText = item.Symbol;
+
+            // Giá mua
+            document.getElementById('stock-detail-form-buy-vol-1').innerText = item.BidVol1.toLocaleString();
+            document.getElementById('stock-detail-form-buy-price-1').innerText = (item.BidPrice1 / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-buy-vol-2').innerText = item.BidVol2.toLocaleString();
+            document.getElementById('stock-detail-form-buy-price-2').innerText = (item.BidPrice2 / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-buy-vol-3').innerText = item.BidVol3.toLocaleString();
+            document.getElementById('stock-detail-form-buy-price-3').innerText = (item.BidPrice3 / 1000).toFixed(2);
+
+            // Giá bán
+            document.getElementById('stock-detail-form-sell-vol-1').innerText = item.AskVol1.toLocaleString();
+            document.getElementById('stock-detail-form-sell-price-1').innerText = (item.AskPrice1 / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-sell-vol-2').innerText = item.AskVol2.toLocaleString();
+            document.getElementById('stock-detail-form-sell-price-2').innerText = (item.AskPrice2 / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-sell-vol-3').innerText = item.AskVol3.toLocaleString();
+            document.getElementById('stock-detail-form-sell-price-3').innerText = (item.AskPrice3 / 1000).toFixed(2);
+
+            // Trần - Sàn - Tham chiếu
+            document.getElementById('stock-detail-form-ceiling').innerText = (item.Ceiling / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-floor').innerText = (item.Floor / 1000).toFixed(2);
+            document.getElementById('stock-detail-form-reference').innerText = (item.RefPrice / 1000).toFixed(2);
+        });
+    </script>
+</body>
+
+</html>
