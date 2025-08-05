@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Detail Form</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/detailformstock.css') }}"
+    />
+  </head>
+  <body>
+    <form id="stockDetailForm" aria-label="Stock Detail Form">
+      <div class="stock-detail-header">
+        <h2>Chi tiết cổ phiếu <span id="modalSymbol"></span></h2>
+        <button type="button" class="close-btn" id="closeModal">✖</button>
+      </div>
+
+      <!-- Thông tin tổng quan -->
+      <div class="stock-detail-overview">
+        <div class="stock-detail-quote">
+          <h3>
+            <span id="stock-detail-form-price">--</span>
+            <span id="stock-detail-form-variation">0.00%</span>
+          </h3>
+          <p>
+            Mở Cửa/Trung bình:
+            <span id="stock-detail-form-open-range">--</span><br />
+            Thấp/Cao: <span id="stock-detail-form-range">--</span><br />
+            Tổng KL: <span id="stock-detail-form-volume-total">--</span>
+          </p>
+        </div>
+        <div class="stock-detail-metrics">
+          <p>
+            Trần:
+            <span id="stock-detail-form-ceiling" style="color: #f23aff">--</span
+            ><br />
+            Sàn:
+            <span id="stock-detail-form-floor" style="color: #00c9af">--</span
+            ><br />
+            Tham chiếu:
+            <span id="stock-detail-form-reference" style="color: #fdff12"
+              >--</span
+            >
+          </p>
+        </div>
+        <div class="stock-detail-bidask">
+          <h4>Độ sâu thị trường</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>KL</th>
+                <th>Giá bán</th>
+                <th>KL</th>
+                <th>Giá mua</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="stock-detail-form-buy-vol-1"></td>
+                <td id="stock-detail-form-buy-price-1"></td>
+                <td id="stock-detail-form-sell-vol-1"></td>
+                <td id="stock-detail-form-sell-price-1"></td>
+              </tr>
+              <tr>
+                <td id="stock-detail-form-buy-vol-2"></td>
+                <td id="stock-detail-form-buy-price-2"></td>
+                <td id="stock-detail-form-sell-vol-2"></td>
+                <td id="stock-detail-form-sell-price-2"></td>
+              </tr>
+              <tr>
+                <td id="stock-detail-form-buy-vol-3"></td>
+                <td id="stock-detail-form-buy-price-3"></td>
+                <td id="stock-detail-form-sell-vol-3"></td>
+                <td id="stock-detail-form-sell-price-3"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart + giao dịch -->
+      <div class="stock-detail-main">
+        <div class="stock-detail-chart">
+          <iframe id="stockIframe" title="TradingView Chart"></iframe>
+        </div>
+
+        <div class="stock-detail-trades">
+          <div class="input-section">
+            <label>Khối lượng</label>
+            <div class="qty-control">
+              <button type="button" onclick="changeQty(-1)">-</button>
+              <input type="number" id="orderQty" value="1" min="1" />
+              <button type="button" onclick="changeQty(1)">+</button>
+            </div>
+
+            <label>Giá</label>
+            <div class="qty-control">
+              <button type="button" onclick="changePrice(-1)">-</button>
+              <input type="number" id="orderPrice" value="0" />
+              <button type="button" onclick="changePrice(1)">+</button>
+            </div>
+          </div>
+
+          <div>
+            <label>Giá trị</label>
+            <div><span id="orderValue">0</span> VND</div>
+          </div>
+
+          <div class="action-buttons">
+            <button type="button" class="buy" id="buyBtn">Mua</button>
+            <button type="button" class="sell" id="sellBtn">Bán</button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <script>
+      let currentSymbol = null;
+      let chartLoaded = false;
+
+      // Đóng modal
+      document
+        .getElementById("closeModal")
+        .addEventListener("click", function () {
+          parent.document.getElementById("stock-modal").style.display = "none";
+        });
+
+      // Lắng nghe dữ liệu từ dashboard
+      window.addEventListener("message", function (event) {
+        const data = event.data;
+        if (!data || data.type !== "update_stock_detail") return;
+        updateStockDetail(data.payload);
+      });
+
+      function updateStockDetail(item) {
+        // Nếu đổi mã thì reset trạng thái load chart
+        if (currentSymbol !== item.Symbol) {
+          currentSymbol = item.Symbol;
+          chartLoaded = false;
+        }
+
+        document.getElementById("modalSymbol").innerText = item.Symbol;
+
+        // Load TradingView chỉ 1 lần khi đổi mã
+        if (!chartLoaded) {
+          document.getElementById(
+            "stockIframe"
+          ).src = `https://iboard.ssi.com.vn/tradingview/?symbol=${item.Symbol}&language=vi&interval=D&theme=classic`;
+          chartLoaded = true;
+
+          document.getElementById("orderPrice").value = (
+            item.RefPrice / 1000
+          ).toFixed(2);
+          calcOrderValue();
+        }
+
+        // Giá hiện tại & % thay đổi
+        document.getElementById("stock-detail-form-price").innerText = (
+          item.CurrentPrice / 1000
+        ).toFixed(2);
+        document.getElementById("stock-detail-form-variation").innerText = `${
+          item.RatioChange?.toFixed(2) || "0.00"
+        }%`;
+
+        // Mở cửa / Trung bình (nếu có)
+        document.getElementById("stock-detail-form-open-range").innerText = `${(
+          item.OpenPrice / 1000
+        ).toFixed(2)}/${(item.AvgPrice / 1000).toFixed(2)}`;
+
+        // Thấp / Cao
+        document.getElementById("stock-detail-form-range").innerText = `${(
+          item.Low / 1000
+        ).toFixed(2)} / ${(item.High / 1000).toFixed(2)}`;
+
+        // Tổng KL
+        document.getElementById("stock-detail-form-volume-total").innerText =
+          item.TotalVol?.toLocaleString() || "--";
+
+        // Giá mua/bán
+        for (let i = 1; i <= 3; i++) {
+          document.getElementById(`stock-detail-form-buy-vol-${i}`).innerText =
+            item[`BidVol${i}`]?.toLocaleString() || "";
+          document.getElementById(
+            `stock-detail-form-buy-price-${i}`
+          ).innerText = (item[`BidPrice${i}`] / 1000).toFixed(2);
+          document.getElementById(`stock-detail-form-sell-vol-${i}`).innerText =
+            item[`AskVol${i}`]?.toLocaleString() || "";
+          document.getElementById(
+            `stock-detail-form-sell-price-${i}`
+          ).innerText = (item[`AskPrice${i}`] / 1000).toFixed(2);
+        }
+
+        // Trần/Sàn/Tham chiếu
+        document.getElementById("stock-detail-form-ceiling").innerText = (
+          item.Ceiling / 1000
+        ).toFixed(2);
+        document.getElementById("stock-detail-form-floor").innerText = (
+          item.Floor / 1000
+        ).toFixed(2);
+        document.getElementById("stock-detail-form-reference").innerText = (
+          item.RefPrice / 1000
+        ).toFixed(2);
+
+        // Giá mặc định khi đặt lệnh
+      }
+
+      function changeQty(delta) {
+        let qty = parseInt(document.getElementById("orderQty").value) + delta;
+        if (qty < 1) qty = 1;
+        document.getElementById("orderQty").value = qty;
+        calcOrderValue();
+      }
+
+      function changePrice(delta) {
+        let price =
+          parseFloat(document.getElementById("orderPrice").value) +
+          delta * 0.05;
+        if (price < 0) price = 0;
+        document.getElementById("orderPrice").value = price.toFixed(2);
+        calcOrderValue();
+      }
+
+      function calcOrderValue() {
+        const qty = parseInt(document.getElementById("orderQty").value);
+        const price = parseFloat(document.getElementById("orderPrice").value);
+        document.getElementById("orderValue").innerText = (
+          qty *
+          price *
+          1000
+        ).toLocaleString();
+      }
+
+      async function sendOrder(side) {
+        const symbol = currentSymbol;
+        const qty = parseInt(document.getElementById("orderQty").value);
+        const price = parseFloat(document.getElementById("orderPrice").value);
+
+        // Lấy giá trần và giá sàn từ DOM
+        const ceiling = parseFloat(
+          document.getElementById("stock-detail-form-ceiling").innerText
+        );
+        const floor = parseFloat(
+          document.getElementById("stock-detail-form-floor").innerText
+        );
+
+        console.log("symbol", symbol, "qty", qty, "price", price, "side", side);
+
+        if (!symbol || qty <= 0 || price <= 0) {
+          alert("Vui lòng nhập đủ thông tin lệnh");
+          return;
+        }
+
+        // ✅ Kiểm tra giá phải nằm trong khoảng [sàn, trần]
+        if (price < floor || price > ceiling) {
+          alert(`Giá phải nằm trong khoảng từ ${floor} đến ${ceiling}`);
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              symbol: symbol,
+              side: side, // "Mua" hoặc "Bán"
+              qty: qty,
+              price: price * 1000,
+            }),
+          });
+
+          if (res.status === 401) {
+            alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt lệnh.");
+            window.location.href = "/login";
+            return;
+          }
+
+          const result = await res.json();
+          alert(result.message || "Đặt lệnh thành công");
+        } catch (error) {
+          console.error("Lỗi đặt lệnh:", error);
+          alert("Có lỗi khi gửi lệnh");
+        }
+      }
+
+      // Gắn sự kiện cho nút
+      document.getElementById("buyBtn").addEventListener("click", function () {
+        sendOrder("Mua");
+      });
+
+      document.getElementById("sellBtn").addEventListener("click", function () {
+        sendOrder("Bán");
+      });
+    </script>
+  </body>
+</html>

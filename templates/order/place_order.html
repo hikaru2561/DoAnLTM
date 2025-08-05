@@ -2,36 +2,189 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Test API Đặt Lệnh</title>
+    <title>Đặt Lệnh - Giao diện Tối</title>
+    <style>
+      :root {
+        --bg-dark: #1c1e2c;
+        --container-bg: #2a2d3e;
+        --input-bg: #3a3d4f;
+        --text-light: #e6e6e6;
+        --primary-color: #ff4d4f;
+        --border-color: #555;
+      }
+
+      body {
+        background-color: var(--bg-dark);
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        color: var(--text-light);
+        animation: fadeIn 0.6s ease;
+      }
+
+      .container {
+        background: var(--container-bg);
+        padding: 40px 40px 30px;
+        border-radius: 16px;
+        box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+        max-width: 500px;
+        width: 100%;
+        animation: slideUp 0.6s ease;
+        position: relative;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 22px;
+        color: #fff;
+        position: relative;
+      }
+
+      h2::after {
+        content: "Gửi lệnh mua/bán theo thời gian thực";
+        display: block;
+        font-size: 13px;
+        color: #bbb;
+        margin-top: 6px;
+        font-weight: normal;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: var(--text-light);
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background-color: var(--input-bg);
+        color: var(--text-light);
+        box-sizing: border-box;
+        transition: border-color 0.3s, background-color 0.3s;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        background-color: #44475a;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background-color: #d9363e;
+      }
+
+      button:active {
+        transform: scale(0.98);
+      }
+
+      h3 {
+        margin-top: 25px;
+        color: var(--text-light);
+        font-size: 18px;
+      }
+
+      pre {
+        background: #202230;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #fff;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin-top: 8px;
+      }
+
+      /* Hiệu ứng */
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h2>Form Đặt Lệnh (Place Order)</h2>
-    <form id="orderForm">
-      <label for="loai_lenh">Loại lệnh:</label>
-      <select id="loai_lenh" required>
-        <option value="Mua">Mua</option>
-        <option value="Bán">Bán</option>
-      </select>
-      <br /><br />
+    <div class="container">
+      <h2>Form Đặt Lệnh (Place Order)</h2>
+      <form id="orderForm">
+        <div class="form-group">
+          <label for="loai_lenh">Loại lệnh:</label>
+          <select id="loai_lenh" required>
+            <option value="Mua">Mua</option>
+            <option value="Bán">Bán</option>
+          </select>
+        </div>
 
-      <label for="stock_id">Mã cổ phiếu:</label>
-      <input type="text" id="stock_id" value="SSI" required />
-      <br /><br />
+        <div class="form-group">
+          <label for="stock_id">Mã cổ phiếu:</label>
+          <input type="text" id="stock_id" value="SSI" required />
+        </div>
 
-      <label for="gia_lenh">Giá lệnh:</label>
-      <input type="number" id="gia_lenh" step="0.01" value="25000" required />
-      <br /><br />
+        <div class="form-group">
+          <label for="gia_lenh">Giá lệnh:</label>
+          <input
+            type="number"
+            id="gia_lenh"
+            step="0.01"
+            value="25000"
+            required
+          />
+        </div>
 
-      <label for="so_luong">Số lượng:</label>
-      <input type="number" id="so_luong" value="100" required />
-      <br /><br />
+        <div class="form-group">
+          <label for="so_luong">Số lượng:</label>
+          <input type="number" id="so_luong" value="100" required />
+        </div>
 
-      <button type="submit">Gửi lệnh</button>
-    </form>
+        <button type="submit">Gửi lệnh</button>
+      </form>
 
-    <h3>Kết quả:</h3>
-    <pre id="result"></pre>
-
+      <h3>Kết quả:</h3>
+      <pre id="result">Chưa có kết quả</pre>
+    </div>
     <script>
       const form = document.getElementById("orderForm");
       const resultBox = document.getElementById("result");
@@ -47,9 +200,9 @@
         };
 
         try {
-          const response = await fetch("/api/place", {
+          const response = await fetch("/order/place", {
             method: "POST",
-            credentials: "include", // để gửi cookie session
+            credentials: "include", // cần để gửi session cookie
             headers: {
               "Content-Type": "application/json",
             },
@@ -57,7 +210,7 @@
           });
 
           const data = await response.json();
-          resultBox.textContent = JSON.stringify(data, null, 4);
+          resultBox.textContent = `✅ ${data.message}\n`;
         } catch (err) {
           resultBox.textContent = "❌ Lỗi: " + err.message;
         }

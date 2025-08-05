@@ -4,42 +4,120 @@
     <meta charset="UTF-8" />
     <title>Test Lịch sử Lệnh</title>
     <style>
+      :root {
+        --bg-dark: #1c1e2c;
+        --table-bg: #2a2d3e;
+        --header-bg: #35384a;
+        --text-light: #e6e6e6;
+        --highlight: #ffcc00;
+        --border-color: #444;
+        --primary: #ff4d4f;
+      }
+
+      body {
+        background-color: var(--bg-dark);
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-light);
+      }
+
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center; /* thêm dòng này để căn giữa theo chiều dọc trong wrapper */
+        text-align: center;
+        max-width: 960px;
+        width: 100%;
+        padding: 20px;
+      }
+
+      h2 {
+        font-size: 24px;
+        margin-bottom: 12px; /* thêm khoảng cách với nút */
+        color: #fff;
+      }
+
+      button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #d9363e;
+      }
+
+      #message {
+        margin-bottom: 10px;
+        font-size: 15px;
+        color: #ccc;
+      }
+
       table {
         border-collapse: collapse;
         width: 100%;
-        margin-top: 20px;
+        background-color: var(--table-bg);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        margin-top: 16px;
       }
+
       th,
       td {
-        border: 1px solid #ccc;
-        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        text-align: center;
+        font-size: 15px;
       }
+
       th {
-        background-color: #f2f2f2;
+        background-color: var(--header-bg);
+        color: var(--highlight);
+        font-weight: 600;
       }
-      .message {
-        color: red;
-        margin-top: 10px;
+
+      td {
+        color: var(--text-light);
+      }
+
+      tr:last-child td {
+        border-bottom: none;
       }
     </style>
   </head>
   <body>
-    <h2>Lịch sử lệnh</h2>
-    <button onclick="loadOrderHistory()">Tải dữ liệu</button>
-    <div id="message" class="message"></div>
-    <table id="orderTable" style="display: none">
-      <thead>
-        <tr>
-          <th>Mã CK</th>
-          <th>Số lượng</th>
-          <th>Giá</th>
-          <th>Loại lệnh</th>
-          <th>Trạng thái</th>
-          <th>Thời điểm</th>
-        </tr>
-      </thead>
-      <tbody id="orderBody"></tbody>
-    </table>
+    <body>
+      {% include 'components/back_button.html' %}
+      <div class="wrapper">
+        <h2>Lịch sử lệnh</h2>
+        <div id="message" class="message"></div>
+        <table id="orderTable" style="display: none">
+          <thead>
+            <tr>
+              <th>Mã CK</th>
+              <th>Số lượng</th>
+              <th>Giá</th>
+              <th>Loại lệnh</th>
+              <th>Trạng thái</th>
+              <th>Thời điểm</th>
+            </tr>
+          </thead>
+          <tbody id="orderBody"></tbody>
+        </table>
+      </div>
+    </body>
 
     <script>
       async function loadOrderHistory() {
@@ -86,6 +164,8 @@
           messageDiv.textContent = "❌ Lỗi khi tải dữ liệu: " + error;
         }
       }
+
+      window.onload = loadOrderHistory();
     </script>
   </body>
 </html>

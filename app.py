@@ -1,6 +1,6 @@
 import eventlet
 eventlet.monkey_patch()
-from flask import Flask, request,jsonify,render_template,session
+from flask import Flask, request,jsonify,render_template,session,Response
 from flask_socketio import SocketIO
 from config import Config
 from utils.db import init_db
@@ -9,7 +9,6 @@ from utils.db import SessionLocal
 from models.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from utils.auth import create_jwt
 import time
 from ssi_fc_data import model
 from ssi_fc_data.fc_md_stream import MarketDataStream
@@ -19,9 +18,12 @@ import json
 import threading
 import queue
 from datetime import date,timedelta
-from models.models import GiaoDich, QuyNguoiDung,DatLenh,DanhMucDauTu,MarketData  
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from models.models import GiaoDich, QuyNguoiDung,DatLenh,DanhMucDauTu,MarketData ,ThongBao ,LichSuKhopLenh
 from functools import wraps
+from sqlalchemy import func 
+from decimal import Decimal
+from sqlalchemy.orm import joinedload
+from zoneinfo import ZoneInfo
 
 
 # Khởi tạo client và stream
@@ -73,7 +75,11 @@ def init_app():
     time.sleep(0.1)
 
     HNX30 = get_symbols_from_index('hnx30')
-    threading.Thread(target=broadcast_market_data_loop, daemon=True).start()
+    api_data = threading.Thread(target=broadcast_market_data_loop, daemon=True)
+    api_data.start()
+    matching_thread = threading.Thread(target=xu_ly_khop_lenh_lien_tuc, daemon=True)
+    matching_thread.start()
+    
 
 def get_user_id(sid):
     return user_sessions.get(sid)
@@ -108,7 +114,130 @@ def broadcast_market_data_loop():
                 print(f"❌ Lỗi khi gửi dữ liệu: {e}")
             finally:
                 session.close()
-        time.sleep(0.1)
+        time.sleep(0.3)
+
+def xu_ly_khop_lenh_lien_tuc():
+    while True:
+        session = SessionLocal()
+        try:
+            lenh_chua_khop = session.query(DatLenh)\
+                .filter(DatLenh.trang_thai == 'Đang xử lý')\
+                .options(joinedload(DatLenh.stock), joinedload(DatLenh.user))\
+                .all()
+
+            for lenh in lenh_chua_khop:
+                market: MarketData = lenh.stock
+                if not market:
+                    continue
+
+                matched = False
+                matched_qty = 0
+                matched_price = 0
+
+                if lenh.loai_lenh == "Mua":
+                    if lenh.gia_lenh >= market.AskPrice1:
+                        matched_price = market.AskPrice1
+                        matched_qty = min(lenh.so_luong_co_phieu, int(market.AskVol1 or 0))
+                        matched = True
+
+                elif lenh.loai_lenh == 'Bán':
+                    if lenh.gia_lenh <= market.BidPrice1:
+                        matched_price = market.BidPrice1
+                        matched_qty = min(lenh.so_luong_co_phieu, int(market.BidVol1 or 0))
+                        matched = True
+
+                if matched and matched_qty > 0:
+                    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+
+                    # ✅ Cập nhật danh mục đầu tư
+                    try:
+                        dmdt = session.query(DanhMucDauTu)\
+                            .filter_by(ID_user=lenh.ID_user, ID_stock=lenh.ID_stock)\
+                            .first()
+
+                        if lenh.loai_lenh == 'Mua':
+                            if dmdt:
+                                tong_gia = dmdt.gia_mua_trung_binh * dmdt.so_luong_co_phieu_nam + matched_price * matched_qty
+                                dmdt.so_luong_co_phieu_nam += matched_qty
+                                dmdt.gia_mua_trung_binh = tong_gia / dmdt.so_luong_co_phieu_nam
+                            else:
+                                dmdt = DanhMucDauTu(
+                                    ID_user=lenh.ID_user,
+                                    ID_stock=lenh.ID_stock,
+                                    so_luong_co_phieu_nam=matched_qty,
+                                    gia_mua_trung_binh=matched_price
+                                )
+                                session.add(dmdt)
+
+                        elif lenh.loai_lenh == 'Bán':
+                            if dmdt:
+                                if matched_qty >= dmdt.so_luong_co_phieu_nam:
+                                    session.delete(dmdt)
+                                else:
+                                    dmdt.so_luong_co_phieu_nam -= matched_qty
+
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
+                        print("❌ Lỗi cập nhật danh mục đầu tư:", e)
+
+                    # ✅ Cộng tiền (nếu là lệnh bán)
+                    if lenh.loai_lenh == 'Bán':
+                        try:
+                            tien = matched_price * matched_qty
+                            session.add(QuyNguoiDung(userID=lenh.ID_user, so_tien=tien))
+                            session.commit()
+                        except Exception as e:
+                            session.rollback()
+                            print("❌ Lỗi cộng tiền:", e)
+
+                    # ✅ Ghi lịch sử khớp lệnh
+                    try:
+                        session.add(LichSuKhopLenh(
+                            ID_user=lenh.ID_user,
+                            ID_stock=lenh.ID_stock,
+                            loai_lenh=lenh.loai_lenh,
+                            gia_khop=matched_price,
+                            so_luong=matched_qty,
+                            thoi_gian=now
+                        ))
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
+                        print("❌ Lỗi ghi lịch sử khớp lệnh:", e)
+
+                    # ✅ Gửi thông báo
+                    try:
+                        session.add(ThongBao(
+                            ID_user=lenh.ID_user,
+                            loai_thong_bao="Khớp lệnh",
+                            noi_dung=f"Lệnh {lenh.loai_lenh.upper()} cổ phiếu {lenh.ID_stock} đã khớp {matched_qty} CP giá {matched_price}.",
+                            trang_thai="Chưa đọc",
+                            thoi_gian=now
+                        ))
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
+                        print("❌ Lỗi gửi thông báo:", e)
+
+                    # ✅ Cập nhật trạng thái lệnh
+                    try:
+                        if matched_qty == lenh.so_luong_co_phieu:
+                            lenh.trang_thai = "Đã khớp"
+                        else:
+                            lenh.so_luong_co_phieu -= matched_qty
+                            lenh.trang_thai = "Khớp một phần"
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
+                        print("❌ Lỗi cập nhật trạng thái lệnh:", e)
+
+        except Exception as e:
+            print("❌ Lỗi ngoài vòng lặp khớp lệnh:", e)
+        finally:
+            session.close()
+
+        time.sleep(1)
 
 
 def insert_or_update_market_data(content: dict):
@@ -186,13 +315,13 @@ def get_symbols_from_index(index_code):
         return []
 # Lấy danh sách mã theo sàn
 def md_get_securities_list(exchange_code):
-    req = model.securities(exchange_code, 1, 1000)
+    req = model.securities(exchange_code, 1, 100)
     res = client.securities(config, req)
     return res
 
 # Lấy danh sách mã theo chỉ số
 def md_get_index_components(index_code):
-    req = model.index_components(index_code, 1, 1000)
+    req = model.index_components(index_code, 1, 100)
     res = client.index_components(config, req)
     return res
 
@@ -200,7 +329,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'message': 'Chưa đăng nhập'}), 401
+            return render_template("login.html"), 401  
         return f(*args, **kwargs)
     return decorated_function
 
@@ -272,6 +401,7 @@ def handle_login():
         session_db.close()
 
 @app.route('/api/logout', methods=['POST'])
+@login_required
 def logout():
     session.clear()
     return jsonify({'message': 'Đăng xuất thành công'}), 200
@@ -316,6 +446,7 @@ def deposit_page():
     return render_template('wallet/deposit.html')
 
 @app.route('/wallet/deposit', methods=['POST'])
+@login_required
 def handle_deposit():
     user_id = session.get('user_id')  # 🔄 Lấy user_id từ session
 
@@ -347,10 +478,7 @@ def handle_deposit():
 
         quy = QuyNguoiDung(
             userID=user_id,
-            id_lien_ket_tai_khoan=None,
-            loai_giao_dich='Nạp',
-            so_tien_giao_dich=amount,
-            ngay_giao_dich=today
+            so_tien=amount,
         )
         db_session.add(quy)
 
@@ -369,9 +497,9 @@ def withdraw_page():
     return render_template('wallet/withdraw.html')
 
 @app.route('/wallet/withdraw', methods=['POST'])
+@login_required
 def handle_withdraw():
-    user_id = session.get('user_id')  # ✅ Dùng session thay cho JWT
-
+    user_id = session.get('user_id')
     data = request.get_json()
     amount = data.get('amount')
 
@@ -386,9 +514,15 @@ def handle_withdraw():
     try:
         today = date.today()
 
-        # 🔒 TODO: kiểm tra số dư thực tế trước khi rút
-        # (có thể bổ sung sau nếu bạn muốn kiểm soát kỹ hơn)
+        # ✅ Tính số dư hiện tại
+        current_balance = db_session.query(
+            func.coalesce(func.sum(QuyNguoiDung.so_tien), 0)
+        ).filter_by(userID=user_id).scalar()
 
+        if amount > current_balance:
+            return jsonify({'message': 'Số dư không đủ để rút tiền'}), 400
+
+        # Ghi log giao dịch
         gd = GiaoDich(
             userID=user_id,
             id_lien_ket_tai_khoan=None,
@@ -398,12 +532,10 @@ def handle_withdraw():
         )
         db_session.add(gd)
 
+        # Cập nhật số dư âm trong bảng QuyNguoiDung
         quy = QuyNguoiDung(
             userID=user_id,
-            id_lien_ket_tai_khoan=None,
-            loai_giao_dich='Rút',
-            so_tien_giao_dich=-amount,
-            ngay_giao_dich=today
+            so_tien=-amount,
         )
         db_session.add(quy)
 
@@ -447,13 +579,13 @@ def handle_transaction_history():
 @app.route('/portfolio/page', methods=['GET'])
 @login_required
 def portfolio_page():
-    return render_template('portfolio.html')
+    return render_template('user/portfolio.html')
 
 
 @app.route('/portfolio', methods=['GET'])
 @login_required
 def handle_portfolio():
-    user_id = session.get('user_id')  # Lấy từ Flask session
+    user_id = session.get('user_id')
     if not user_id:
         return jsonify({'message': 'Bạn cần đăng nhập trước.'}), 401
 
@@ -461,17 +593,111 @@ def handle_portfolio():
     try:
         holdings = db_session.query(DanhMucDauTu).filter_by(ID_user=user_id).all()
         results = [{
-            'stock_id': h.ID_stock,
-            'so_luong': h.so_luong_co_phieu_nam,
+            'ID_stock': h.ID_stock,
+            'so_luong_co_phieu_nam': h.so_luong_co_phieu_nam,
             'gia_mua_trung_binh': float(h.gia_mua_trung_binh)
         } for h in holdings]
 
-        return jsonify({'assets': results}), 200
+        return jsonify(results), 200  # trả thẳng mảng, không bọc trong "assets"
     finally:
         db_session.close()
 
+@app.route('/user/balance/page')
+@login_required
+def view_balance_page():
+    return render_template('user/balance.html')
 
-#Lịch sử lệnh giao dịch
+@app.route('/user/balance', methods=['GET'])
+@login_required
+def get_user_balance():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'message': 'Bạn cần đăng nhập trước.'}), 401
+
+    db = SessionLocal()
+    try:
+        balances = db.query(QuyNguoiDung).filter_by(userID=user_id)\
+                    .with_entities(QuyNguoiDung.so_tien).all()
+        tong_tien = sum(float(t[0]) for t in balances)
+
+        return jsonify({'user_id': user_id, 'so_du': tong_tien}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+    finally:
+        db.close()
+
+
+#Lịch sử lệnh giao dịch\
+
+@app.route("/api/order", methods=["POST"])
+@login_required
+def place_order():
+    db = SessionLocal()
+    try:
+        data = request.json
+        user_id = session.get("user_id")
+
+        # Lấy dữ liệu
+        symbol = data.get("symbol")
+        side = data.get("side")  
+        qty = int(data.get("qty", 0))
+        price = float(data.get("price", 0))
+
+        if not symbol or qty <= 0 or price <= 0:
+            return jsonify({"status": "error", "message": "Dữ liệu không hợp lệ"}), 400
+
+        # Kiểm tra cổ phiếu tồn tại
+        stock = db.query(MarketData).filter_by(Symbol=symbol).first()
+        if not stock:
+            return jsonify({"status": "error", "message": "Mã cổ phiếu không tồn tại"}), 404
+
+        side = side.strip()
+
+        # ===== Kiểm tra điều kiện giao dịch =====
+        if side == "Mua":
+            # Lấy tổng tiền trong quỹ
+            tong_tien = db.query(func.sum(QuyNguoiDung.so_tien)).filter_by(userID=user_id).scalar() or 0
+            tong_gia_tri_lenh = qty * price   # giá trị VND
+            if tong_gia_tri_lenh > tong_tien:
+                return jsonify({"status": "error", "message": "Số dư quỹ không đủ để mua"}), 400
+
+        elif side == "Bán":
+            # Lấy số lượng cổ phiếu đang nắm giữ
+            danh_muc = db.query(DanhMucDauTu).filter_by(ID_user=user_id, ID_stock=symbol).first()
+            so_luong_hien_tai = danh_muc.so_luong_co_phieu_nam if danh_muc else 0
+            if qty > so_luong_hien_tai:
+                return jsonify({"status": "error", "message": "Không đủ cổ phiếu để bán"}), 400
+        else:
+            return jsonify({"status": "error", "message": "Loại lệnh không hợp lệ"}), 400
+
+        # ===== Tạo lệnh =====
+        new_order = DatLenh(
+            ID_user=user_id,
+            ID_stock=symbol,
+            loai_lenh=side,
+            gia_lenh=price,
+            so_luong_co_phieu=qty,
+            thoi_diem_dat=datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")),
+            trang_thai="Đang xử lý",
+            trading="Chưa khớp"
+        )
+
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
+
+        return jsonify({
+            "status": "success",
+            "message": "Lệnh đã được gửi",
+        }), 200
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Lỗi đặt lệnh:", e)
+        return jsonify({"status": "error", "message": "Có lỗi khi đặt lệnh"}), 500
+    finally:
+        db.close()
+
 
 @app.route('/order/history/page', methods=['GET'])
 @login_required
@@ -515,7 +741,7 @@ def place_order_page():
 @app.route('/order/place', methods=['POST'])
 @login_required
 def handle_place_order():
-    user_id = session.get('user_id')  # Giả sử bạn đang dùng Flask session
+    user_id = session.get('user_id')
     if not user_id:
         return jsonify({'message': 'Bạn cần đăng nhập trước.'}), 401
 
@@ -532,8 +758,9 @@ def handle_place_order():
             return jsonify({'message': 'Loại lệnh không hợp lệ'}), 400
 
         if loai_lenh == 'Mua':
+            # Tính tổng số dư
             total_balance = db.query(QuyNguoiDung).filter_by(userID=user_id)\
-                .with_entities(QuyNguoiDung.so_tien_giao_dich).all()
+                .with_entities(QuyNguoiDung.so_tien).all()
             so_du = sum([float(t[0]) for t in total_balance])
             if so_du < tong_gia_tri:
                 return jsonify({'message': 'Số dư không đủ để mua'}), 400
@@ -548,7 +775,7 @@ def handle_place_order():
             ID_user=user_id,
             ID_stock=stock_id,
             loai_lenh=loai_lenh,
-            thoi_diem_dat=datetime.now(),
+            thoi_diem_dat=datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")),
             gia_lenh=gia_lenh,
             so_luong_co_phieu=so_luong,
             trading='Chưa khớp',
@@ -556,6 +783,22 @@ def handle_place_order():
         )
         db.add(order)
         db.commit()
+
+        # ✅ Nếu là Mua thì trừ tiền khỏi bảng QuyNguoiDung
+        if loai_lenh == 'Mua':
+            tien_con_lai = tong_gia_tri
+            danh_sach_quy = db.query(QuyNguoiDung).filter_by(userID=user_id).order_by(QuyNguoiDung.ID).all()
+
+            for quy in danh_sach_quy:
+                if quy.so_tien >= tien_con_lai:
+                    quy.so_tien -= tien_con_lai
+                    tien_con_lai = 0
+                    break
+                else:
+                    tien_con_lai -= quy.so_tien
+                    quy.so_tien = 0
+
+            db.commit()
 
         return jsonify({'message': 'Đặt lệnh thành công'}), 200
 
@@ -577,7 +820,7 @@ def order_book_page():
 @app.route('/order/book', methods=['GET'])
 @login_required
 def handle_order_book():
-    user_id = session.get('user_id')  # Hoặc dùng session['user_id'] nếu chắc chắn đã đăng nhập
+    user_id = session.get('user_id')
     if not user_id:
         return jsonify({'message': 'Bạn cần đăng nhập trước.'}), 401
 
@@ -588,6 +831,7 @@ def handle_order_book():
             .all()
 
         results = [{
+            'ID': o.ID,
             'symbol_id': o.ID_stock,
             'so_luong': o.so_luong_co_phieu,
             'gia': float(o.gia_lenh),
@@ -598,6 +842,111 @@ def handle_order_book():
         return jsonify({'orders': results}), 200
     finally:
         db_session.close()
+
+
+@app.route("/order/cancel/<int:order_id>", methods=["DELETE"])
+@login_required
+def cancel_order(order_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "Bạn chưa đăng nhập"}), 401
+
+    db = SessionLocal()
+    try:
+        order = db.query(DatLenh).filter_by(ID=order_id, ID_user=user_id).first()
+        if not order:
+            return jsonify({"message": "Không tìm thấy lệnh"}), 404
+        if order.trang_thai != "Đang xử lý":
+            return jsonify({"message": "Không thể hủy lệnh này"}), 400
+
+        # ✅ Nếu là lệnh Mua thì hoàn lại tiền
+        if order.loai_lenh == "Mua":
+            so_tien_hoan = order.so_luong_co_phieu * order.gia_lenh
+            db.add(QuyNguoiDung(userID=user_id, so_tien=so_tien_hoan))
+
+        # Nếu sau này muốn hỗ trợ lệnh Bán, có thể hoàn lại cổ phiếu ở đây
+
+        order.trang_thai = "Hủy"
+        db.commit()
+
+        return jsonify({"message": "✅ Lệnh đã được hủy và hoàn tiền (nếu có)"}), 200
+
+    except Exception as e:
+        print(f"❌ Lỗi khi hủy lệnh: {e}")
+        db.rollback()
+        return jsonify({"message": "Lỗi server khi hủy lệnh"}), 500
+    finally:
+        db.close()
+
+
+
+@app.route('/order/update/<int:order_id>', methods=['PUT'])
+@login_required
+def update_order(order_id):
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'message': 'Bạn chưa đăng nhập'}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Dữ liệu gửi lên không hợp lệ'}), 400
+
+    db = SessionLocal()
+    try:
+        order = db.query(DatLenh).filter_by(ID=order_id, ID_user=user_id).first()
+        if not order:
+            return jsonify({'message': 'Không tìm thấy lệnh'}), 404
+
+        # Cập nhật thông tin lệnh
+        order.loai_lenh = data.get('loai_lenh', order.loai_lenh)
+        order.ID_stock = data.get('stock_id', order.ID_stock)
+        order.gia_lenh = data.get('gia_lenh', order.gia_lenh)
+        order.so_luong_co_phieu = data.get('so_luong', order.so_luong_co_phieu)
+
+        db.commit()
+        return jsonify({'message': 'Cập nhật thành công'}), 200
+
+    except Exception as e:
+        print(f"❌ Lỗi khi cập nhật lệnh: {e}")
+        db.rollback()
+        return jsonify({'message': 'Lỗi server khi cập nhật lệnh'}), 500
+    finally:
+        db.close()
+
+@app.route('/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    user_id = session.get('user_id')
+    db = SessionLocal()
+    try:
+        notifs = db.query(ThongBao).filter_by(ID_user=user_id).order_by(ThongBao.thoi_gian.desc()).all()
+        results = [{
+            "ID": n.ID,
+            "loai_thong_bao": n.loai_thong_bao,
+            "noi_dung": n.noi_dung,
+            "trang_thai": n.trang_thai,
+            "thoi_gian": n.thoi_gian.strftime('%Y-%m-%d %H:%M:%S')
+        } for n in notifs]
+        return jsonify(results), 200
+    finally:
+        db.close()
+
+
+@app.route('/notifications/read/<int:notif_id>', methods=['PUT'])
+@login_required
+def mark_notification_read(notif_id):
+    user_id = session.get('user_id')
+    db = SessionLocal()
+    try:
+        notif = db.query(ThongBao).filter_by(ID=notif_id, ID_user=user_id).first()
+        if not notif:
+            return jsonify({"message": "Không tìm thấy thông báo"}), 404
+
+        notif.trang_thai = "Đã đọc"
+        db.commit()
+        return jsonify({"message": "Đã cập nhật trạng thái"}), 200
+    finally:
+        db.close()
 
 
 @socketio.on('connect')

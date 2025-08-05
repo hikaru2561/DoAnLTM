@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tra Cứu Quỹ Người Dùng</title>
+    <style>
+      :root {
+        --bg-dark: #1c1e2c;
+        --card-bg: #2a2d3e;
+        --text-light: #e6e6e6;
+        --primary: #ff4d4f;
+        --highlight: #ffcc00;
+        --border-color: #444;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      .container {
+        background-color: var(--card-bg);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 800px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: var(--highlight);
+      }
+
+      button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #d9363e;
+      }
+
+      pre {
+        text-align: left;
+        background-color: #1f212f;
+        padding: 15px;
+        border-radius: 6px;
+        font-size: 14px;
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tra Cứu Quỹ Người Dùng</h1>
+      <pre id="ket_qua_quy">Chưa có dữ liệu...</pre>
+    </div>
+
+    <script>
+      async function loadUserBalance() {
+        try {
+          const res = await fetch("/user/balance", {
+            method: "GET",
+            credentials: "include",
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            document.getElementById("ket_qua_quy").textContent =
+              "❌ " + (data.message || "Lỗi không xác định");
+            return;
+          }
+
+          document.getElementById(
+            "ket_qua_quy"
+          ).textContent = `\n💰 Số dư: ${data.so_du.toLocaleString()} VND`;
+        } catch (err) {
+          document.getElementById("ket_qua_quy").textContent =
+            "❌ Lỗi kết nối: " + err.message;
+        }
+      }
+
+      // Tự động gọi khi load trang
+      window.onload = loadUserBalance;
+
+      // Vẫn gắn cho nút nếu muốn thủ công
+    </script>
+  </body>
+</html>

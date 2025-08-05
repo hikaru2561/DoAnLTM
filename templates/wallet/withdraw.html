@@ -4,22 +4,84 @@
     <meta charset="UTF-8" />
     <title>Rút tiền</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
+      :root {
+        --bg-dark: #1c1e2c;
+        --form-bg: #2a2d3e;
+        --input-bg: #3a3d4f;
+        --text-light: #e6e6e6;
+        --primary: #ff4d4f;
+        --border-color: #555;
       }
-      input,
-      button {
-        padding: 10px;
-        margin: 5px 0;
+
+      body {
+        background-color: var(--bg-dark);
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--text-light);
+      }
+
+      .container {
+        background-color: var(--form-bg);
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+      }
+
+      h2 {
+        margin-bottom: 20px;
+        color: #fff;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
         font-size: 16px;
+        background-color: var(--input-bg);
+        color: var(--text-light);
+        margin-bottom: 16px;
+        box-sizing: border-box;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        background-color: #44475a;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #d9363e;
       }
     </style>
   </head>
   <body>
-    <h2>Rút tiền</h2>
-    <input type="number" id="amount" placeholder="Số tiền muốn rút" /><br />
-    <button onclick="withdraw()">Xác nhận rút</button>
+    {% include 'components/back_button.html' %}
+    <div class="container">
+      <h2>Rút tiền</h2>
+      <input type="number" id="amount" placeholder="Nhập số tiền muốn rút" />
+      <button onclick="withdraw()">Xác nhận rút</button>
+    </div>
 
     <script>
       function withdraw() {
@@ -40,7 +102,7 @@
           })
           .catch((err) => {
             console.error("Lỗi:", err);
-            alert("Không thể kết nối máy chủ");
+            alert("❌ Không thể kết nối máy chủ");
           });
       }
     </script>

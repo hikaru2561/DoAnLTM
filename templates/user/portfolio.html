@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://unpkg.com/feather-icons"></script>
+    <title>Danh mục đầu tư</title>
+    <style>
+      :root {
+        --bg-dark: #1c1e2c;
+        --card-bg: #2a2d3e;
+        --text-light: #e6e6e6;
+        --primary: #ff4d4f;
+        --highlight: #ffcc00;
+        --border-color: #444;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .container {
+        background-color: var(--card-bg);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 900px;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: var(--highlight);
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #1f212f;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+        background-color: #3a3f5a;
+        color: var(--highlight);
+      }
+
+      tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: var(--highlight);
+        font-style: italic;
+      }
+    </style>
+  </head>
+
+  <body>
+    {% include 'components/back_button.html' %}
+    <div class="container">
+      <h1><i data-feather="bar-chart-2"></i> Danh mục đầu tư</h1>
+      <div id="output" class="loading">⏳ Đang tải dữ liệu...</div>
+    </div>
+
+    <script>
+      async function getPortfolio() {
+        try {
+          const response = await fetch("/portfolio", {
+            method: "GET",
+            credentials: "include",
+          });
+
+          if (response.status === 401) {
+            document.getElementById("output").textContent =
+              "⚠️ Bạn chưa đăng nhập.";
+            return;
+          }
+
+          const data = await response.json();
+
+          if (!Array.isArray(data) || data.length === 0) {
+            document.getElementById("output").textContent =
+              "📭 Không có dữ liệu danh mục.";
+            return;
+          }
+
+          let table = `
+          <table>
+            <thead>
+              <tr>
+                <th>Mã CP</th>
+                <th>Số lượng</th>
+                <th>Giá mua TB</th>
+                <th>Tổng giá trị</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+          data.forEach((item) => {
+            const gia_tb = item.gia_mua_trung_binh.toLocaleString("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            });
+
+            const tong_gia_tri = (
+              item.so_luong_co_phieu_nam * item.gia_mua_trung_binh
+            ).toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+
+            table += `
+    <tr>
+      <td>${item.ID_stock}</td>
+      <td>${item.so_luong_co_phieu_nam.toLocaleString("vi-VN")}</td>
+      <td>${gia_tb}</td>
+      <td>${tong_gia_tri}</td>
+    </tr>
+  `;
+          });
+
+          table += "</tbody></table>";
+          document.getElementById("output").innerHTML = table;
+        } catch (err) {
+          document.getElementById("output").textContent =
+            "❌ Lỗi: " + err.message;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        feather.replace();
+        getPortfolio();
+      });
+    </script>
+  </body>
+</html>

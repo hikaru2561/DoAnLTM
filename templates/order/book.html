@@ -2,88 +2,244 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Test Sổ Lệnh</title>
+    <title>Sổ lệnh</title>
     <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #1e1f26;
+        color: #f5f5f5;
+        padding: 20px;
+      }
+
       table {
-        border-collapse: collapse;
         width: 100%;
+        border-collapse: collapse;
+        background-color: #2a2d3e;
         margin-top: 20px;
       }
+
       th,
       td {
-        border: 1px solid #ccc;
-        padding: 8px 12px;
+        padding: 12px;
+        border: 1px solid #444;
+        text-align: center;
       }
+
       th {
-        background-color: #f0f0f0;
+        background-color: #3a3f5a;
       }
-      .message {
-        margin-top: 10px;
-        color: red;
+
+      button {
+        padding: 6px 12px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .delete-btn {
+        background-color: #f44336;
+      }
+
+      .delete-btn:hover {
+        background-color: #e53935;
+      }
+
+      #editModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #editModal .modal-content {
+        background: #2a2d3e;
+        padding: 24px 30px;
+        border-radius: 12px;
+        width: 400px;
+        color: white;
+        position: relative;
+      }
+
+      #editModal input,
+      #editModal select {
+        width: 100%;
+        padding: 8px;
+        margin: 6px 0;
+        border-radius: 4px;
+        border: none;
       }
     </style>
   </head>
+
   <body>
-    <h2>Sổ lệnh đang xử lý</h2>
-    <button onclick="loadOrderBook()">Tải dữ liệu</button>
-    <div id="message" class="message"></div>
-    <table id="orderBookTable" style="display: none">
+    <h2>📘 Sổ lệnh của bạn</h2>
+
+    <table id="orderTable">
       <thead>
         <tr>
-          <th>Mã CK</th>
+          <th>Mã cổ phiếu</th>
           <th>Số lượng</th>
           <th>Giá</th>
           <th>Loại lệnh</th>
           <th>Thời điểm</th>
+          <th>Hành động</th>
         </tr>
       </thead>
-      <tbody id="orderBookBody"></tbody>
+      <tbody></tbody>
     </table>
+
+    <div id="editModal">
+      <div class="modal-content">
+        <h3>✏️ Chỉnh sửa Lệnh</h3>
+        <form id="editOrderForm">
+          <input type="hidden" id="edit_order_id" />
+          <label>Loại lệnh:</label>
+          <select id="edit_loai_lenh">
+            <option value="Mua">Mua</option>
+            <option value="Bán">Bán</option>
+          </select>
+
+          <label>Mã cổ phiếu:</label>
+          <input type="text" id="edit_stock_id" required />
+
+          <label>Giá lệnh:</label>
+          <input type="number" id="edit_gia_lenh" step="0.01" required />
+
+          <label>Số lượng:</label>
+          <input type="number" id="edit_so_luong" required />
+
+          <button type="submit">Cập nhật</button>
+          <button type="button" onclick="closeModal()" style="background: gray">
+            Hủy
+          </button>
+          <pre id="edit_result">Chưa có kết quả</pre>
+        </form>
+      </div>
+    </div>
 
     <script>
       async function loadOrderBook() {
-        const messageDiv = document.getElementById("message");
-        const table = document.getElementById("orderBookTable");
-        const tbody = document.getElementById("orderBookBody");
-
-        messageDiv.textContent = "";
-        table.style.display = "none";
-        tbody.innerHTML = "";
-
         try {
-          const response = await fetch("/order/book", {
-            method: "GET",
-            credentials: "include", // Gửi session cookie nếu có
-          });
+          const res = await fetch("/order/book", { credentials: "include" });
+          const data = await res.json();
 
-          if (response.status === 401) {
-            messageDiv.textContent =
-              "⚠️ Bạn chưa đăng nhập. Vui lòng đăng nhập để xem sổ lệnh.";
+          if (!res.ok) {
+            alert(data.message || "Lỗi khi tải sổ lệnh");
             return;
           }
 
-          const data = await response.json();
-
-          if (data.orders && data.orders.length > 0) {
-            data.orders.forEach((order) => {
-              const row = document.createElement("tr");
-              row.innerHTML = `
-              <td>${order.symbol_id}</td>
-              <td>${order.so_luong}</td>
-              <td>${order.gia}</td>
-              <td>${order.loai_lenh}</td>
-              <td>${order.thoi_diem}</td>
-            `;
-              tbody.appendChild(row);
-            });
-            table.style.display = "table";
-          } else {
-            messageDiv.textContent = "Không có lệnh nào đang xử lý.";
-          }
-        } catch (error) {
-          messageDiv.textContent = "❌ Lỗi khi tải dữ liệu: " + error;
+          renderOrderTable(data.orders);
+        } catch (err) {
+          console.error("Lỗi kết nối:", err);
         }
       }
+
+      function renderOrderTable(orders) {
+        const tbody = document.querySelector("#orderTable tbody");
+        tbody.innerHTML = "";
+
+        orders.forEach((order) => {
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+            <td>${order.symbol_id}</td>
+            <td>${order.so_luong}</td>
+            <td>${order.gia}</td>
+            <td>${order.loai_lenh}</td>
+            <td>${order.thoi_diem}</td>
+            <td>
+              <button onclick='openEditModal(${JSON.stringify(
+                order
+              )})'>Sửa</button>
+              <button class="delete-btn" onclick='deleteOrder(${
+                order.ID
+              })'>Hủy</button>
+            </td>
+          `;
+
+          tbody.appendChild(row);
+        });
+      }
+
+      function openEditModal(order) {
+        document.getElementById("edit_order_id").value = order.ID;
+        document.getElementById("edit_loai_lenh").value = order.loai_lenh;
+        document.getElementById("edit_stock_id").value = order.symbol_id;
+        document.getElementById("edit_gia_lenh").value = order.gia;
+        document.getElementById("edit_so_luong").value = order.so_luong;
+        document.getElementById("editModal").style.display = "flex";
+      }
+
+      function closeModal() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      document
+        .getElementById("editOrderForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const id = document.getElementById("edit_order_id").value;
+
+          const payload = {
+            loai_lenh: document.getElementById("edit_loai_lenh").value,
+            stock_id: document.getElementById("edit_stock_id").value,
+            gia_lenh: parseFloat(
+              document.getElementById("edit_gia_lenh").value
+            ),
+            so_luong: parseInt(document.getElementById("edit_so_luong").value),
+          };
+
+          try {
+            const res = await fetch(`/order/update/${id}`, {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            document.getElementById("edit_result").textContent = data.message;
+
+            if (res.ok) {
+              closeModal();
+              loadOrderBook();
+            }
+          } catch (err) {
+            document.getElementById("edit_result").textContent =
+              "❌ Lỗi cập nhật: " + err.message;
+          }
+        });
+
+      async function deleteOrder(orderId) {
+        if (!confirm("Bạn có chắc chắn muốn hủy lệnh?")) return;
+
+        try {
+          const res = await fetch(`/order/cancel/${orderId}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+
+          const data = await res.json();
+          alert(data.message || "✅ Đã hủy lệnh");
+          loadOrderBook();
+        } catch (err) {
+          alert("❌ Lỗi khi hủy lệnh: " + err.message);
+        }
+      }
+
+      loadOrderBook();
     </script>
   </body>
 </html>

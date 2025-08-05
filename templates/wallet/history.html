@@ -2,24 +2,100 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+
     <title>Lịch sử giao dịch</title>
     <style>
+      :root {
+        --bg-dark: #1c1e2c;
+        --text-light: #e6e6e6;
+        --highlight: #ffcc00;
+        --primary: #ff4d4f;
+        --table-bg: #2a2d3e;
+        --header-bg: #35384a;
+        --border-color: #444;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--bg-dark);
+        font-family: "Inter", sans-serif;
+        color: var(--text-light);
+        margin: 0;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h2 {
+        font-size: 26px;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+
+      button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-bottom: 30px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #d9363e;
+      }
+
       table {
         border-collapse: collapse;
-        width: 100%;
-        margin-top: 20px;
+        width: 90%;
+        max-width: 900px;
+        background-color: var(--table-bg);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 14px rgba(0, 0, 0, 0.3);
       }
+
       th,
       td {
-        border: 1px solid #ccc;
-        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      th {
+        background-color: var(--header-bg);
+        color: var(--highlight);
+        font-weight: 600;
+      }
+
+      td {
+        color: var(--text-light);
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .message {
+        margin-top: 12px;
+        font-size: 15px;
+        color: #ccc;
         text-align: center;
       }
     </style>
   </head>
   <body>
+    {% include 'components/back_button.html' %}
     <h2>Lịch sử giao dịch</h2>
-    <button onclick="loadHistory()">Tải lại</button>
     <table id="historyTable">
       <thead>
         <tr>

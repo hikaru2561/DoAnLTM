@@ -9,21 +9,376 @@
       href="{{ url_for('static', filename='css/dashboard.css') }}"
     />
     <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Toastify CSS -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+
+    <!-- Toastify JS -->
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/toastify-js"
+    ></script>
+
     <style>
-      table {
+      /* Style chung giữ nguyên */
+      /* ======================== BẢNG GIÁ ======================== */
+      #data-table {
+        background-color: #232334;
+        color: #e0e0e0;
+        font-family: "Roboto", sans-serif;
+        font-size: 14px;
         border-collapse: collapse;
         width: 100%;
       }
-
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 4px 8px;
-        text-align: center;
+      /* Nhóm nút sàn */
+      .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        margin-left: 8px;
       }
 
-      th {
-        background-color: #f0f0f0;
+      /* Nút sàn */
+      .btn-group .btn {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 8px;
+        min-width: 72px;
+        height: 38px;
+        background-color: #35384a;
+        border: 1px solid #555;
+        color: #e6e6e6;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn-group .btn:hover {
+        background-color: #ff4d4f;
+        color: white;
+        box-shadow: 0 0 6px rgba(255, 77, 79, 0.6);
+      }
+
+      /* Nếu có class active khi chọn sàn */
+      .btn-group .btn.active {
+        background-color: #ff4d4f;
+        color: white;
+        border-color: #ff4d4f;
+      }
+      #data-table th,
+      #data-table td {
+        text-align: center;
+        padding: 6px 8px;
+        font-size: 13px;
+        min-width: 60px;
+        height: 38px;
+        border-bottom: 1px solid #333;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      #data-table th {
+        background-color: #1c1c2a;
+        color: #e0e0e0;
+        font-weight: bold;
+        border-bottom: 1px solid #444;
+      }
+
+      #data-table tbody tr:nth-child(odd) {
+        background-color: #2c2c3e;
+      }
+
+      #data-table tbody tr:hover {
+        background-color: #3a3a93;
+      }
+
+      td:first-child {
+        font-weight: bold;
+        color: #00ff66;
+      }
+
+      /* ======================Detail=========================*/
+
+      #stock-modal {
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #stock-modal .modal-overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+      }
+
+      #stock-modal .modal-container {
+        position: relative;
+        z-index: 10000;
+        background: #1e2a44;
+        border-radius: 8px;
+        max-width: 1200px;
+        width: 100%;
+        max-height: 90%;
+        overflow-y: auto;
+      }
+
+      #stock-modal .close-btn {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 24px;
+        color: white;
+        cursor: pointer;
+        z-index: 1000;
+      }
+      .close-btn:hover {
+        color: red;
+      }
+
+      /* ======================== MÀU GIÁ ======================== */
+      td.bg-up,
+      .price-up {
+        background-color: #014421 !important;
+        color: #00ff00;
+      } /* Tăng */
+      td.bg-down,
+      .price-down {
+        background-color: #420000 !important;
+        color: #ff4d4d;
+      } /* Giảm */
+      td.bg-ref,
+      .price-ref {
+        background-color: #3b3b00 !important;
+        color: #ffff66;
+      } /* Tham chiếu */
+      td.bg-ceiling {
+        background-color: #4b0055 !important;
+        color: #ff66ff;
+      } /* Trần */
+      td.bg-floor {
+        background-color: #002b40 !important;
+        color: #66ccff;
+      } /* Sàn */
+      .price-nochange {
+        color: #ffffff;
+      }
+      /* ======================== NÚT LỆNH ======================== */
+      #button-order-stock {
+        margin-left: auto;
+      }
+      /* ======================== FORM CHI TIẾT MÃ CP ======================== */
+      .modal-overlay-detail-form {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.7);
+      }
+
+      .modal-content {
+        background: #1e2a44;
+        border: 1px solid #2a3f5f;
+        border-radius: 4px;
+        width: 1200px;
+        padding: 10px;
+        position: relative;
+        color: #d1d9e6;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        height: 600px;
+      }
+
+      .modal-content .close-btn {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 18px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: #d1d9e6;
+        transition: color 0.3s;
+      }
+      .modal-content .close-btn:hover {
+        color: #ff4444;
+      }
+
+      /* ======================== HEADER FORM ======================== */
+      .stock-detail-form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1px 12px;
+        background-color: #1e2a44;
+        border-bottom: 1px solid #2a3f5f;
+        margin-bottom: 1px;
+        width: 100%;
+      }
+      .stock-detail-form-header h2 {
+        margin: 0;
+        font-size: 16px;
+        color: #d1d9e6;
+        font-weight: 500;
+      }
+      .stock-detail-form-header div {
+        display: flex;
+        gap: 8px;
+      }
+      .stock-detail-form-header button {
+        padding: 4px 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .stock-detail-form-header button:hover {
+        background-color: #0056b3;
+      }
+
+      /* ======================== BỐ CỤC FORM CHI TIẾT ======================== */
+      .stock-detail-form-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+      }
+      .stock-detail-form-main {
+        display: flex;
+        flex: 1 1 auto;
+        gap: 10px;
+        height: 100%;
+        width: 100%;
+      }
+      .stock-detail-form-chart {
+        flex: 3;
+        border: 1px solid #2a3f5f;
+        border-radius: 4px;
+        background-color: #1e2a44;
+        overflow: hidden;
+        min-width: 0;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        height: 100%;
+      }
+      .stock-detail-form-market-wrapper {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        height: 100%;
+      }
+
+      /* ======================== THÔNG TIN CỔ PHIẾU BÊN PHẢI ======================== */
+      .stock-detail-form-overview {
+        padding: 8px 12px;
+        background-color: #1e2a44;
+        border: 1px solid #2a3f5f;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        justify-content: space-between;
+      }
+      .stock-detail-form-quote,
+      .stock-detail-form-metrics {
+        flex: 1;
+        padding: 6px;
+      }
+      .stock-detail-form-quote h3 {
+        margin: 0;
+        font-size: 20px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .stock-detail-form-quote h3 span#stock-detail-form-price {
+        color: #ffd700;
+        font-weight: 600;
+      }
+      .stock-detail-form-quote h3 span#stock-detail-form-variation {
+        color: #d1d9e6;
+        font-size: 14px;
+        margin-left: 6px;
+      }
+      .stock-detail-form-quote p,
+      .stock-detail-form-metrics p {
+        margin: 4px 0;
+        font-size: 12px;
+      }
+      .stock-detail-form-quote span,
+      .stock-detail-form-metrics span {
+        color: #a0b0c0;
+      }
+
+      /* ======================== BÊN MUA / BÊN BÁN ======================== */
+      .stock-detail-form-bidask,
+      .stock-detail-form-trades {
+        flex: 1 1 0;
+        padding: 6px;
+        background-color: #1e2a44;
+        border: 1px solid #2a3f5f;
+        border-radius: 4px;
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .stock-detail-form-bidask h4,
+      .stock-detail-form-trades h4 {
+        margin: 0 0 6px 0;
+        color: #d1d9e6;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* ======================== BẢNG BÊN MUA/BÁN ======================== */
+      .stock-detail-form-market table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .stock-detail-form-market th,
+      .stock-detail-form-market td {
+        padding: 4px 6px;
+        text-align: center;
+        border-bottom: 1px solid #2a3f5f;
+        color: #d1d9e6;
+      }
+      .stock-detail-form-market th {
+        background-color: #2a3f5f;
+        font-weight: 500;
+      }
+      .stock-detail-form-market td {
+        background-color: #1e2a44;
+      }
+      .stock-detail-form-market .buy {
+        color: #00ff00;
+      }
+      .stock-detail-form-market .sell {
+        color: #ff0000;
       }
     </style>
   </head>
@@ -37,10 +392,175 @@
       <div class="right-section">
         <!-- Đồng hồ -->
         <span class="clock" id="clock">--:--:--</span>
-
-        <div class="icon-wrapper" title="Thông báo">
+        <div class="icon-wrapper" title="Thông báo" onclick="openNotifModal()">
           <i data-feather="bell"></i>
         </div>
+
+        <!-- Modal danh sách thông báo -->
+        <div id="notifModal" class="modal">
+          <div class="modal-content">
+            <span class="close" onclick="closeNotifModal()">&times;</span>
+            <h2>📢 Thông báo</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Loại</th>
+                  <th>Nội dung</th>
+                  <th>Thời gian</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="notifList"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modal chi tiết thông báo -->
+        <div id="notifDetailModal" class="modal">
+          <div class="modal-content">
+            <span class="close" onclick="closeDetailModal()">&times;</span>
+            <h3 id="detailType"></h3>
+            <p id="detailContent"></p>
+            <small id="detailTime"></small>
+          </div>
+        </div>
+
+        <style>
+          .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            animation: fadeIn 0.25s ease-in-out;
+          }
+
+          .modal-content {
+            background-color: #2a2d3e;
+            margin: 5% auto;
+            padding: 25px 30px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            animation: slideDown 0.3s ease;
+          }
+
+          .close {
+            float: right;
+            font-size: 22px;
+            cursor: pointer;
+            color: #aaa;
+            transition: color 0.2s;
+          }
+          .close:hover {
+            color: #fff;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+          }
+
+          th,
+          td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+          }
+
+          th {
+            background-color: #3a3f5a;
+            color: var(--highlight, #ffcc00);
+            font-weight: 600;
+          }
+
+          tr.unread {
+            background-color: rgba(255, 204, 0, 0.08);
+            font-weight: bold;
+          }
+
+          tr:hover {
+            background-color: rgba(255, 255, 255, 0.07);
+            transition: background-color 0.2s ease;
+          }
+
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+
+          @keyframes slideDown {
+            from {
+              transform: translateY(-20px);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+        </style>
+
+        <script>
+          async function openNotifModal() {
+            const res = await fetch("/notifications", {
+              credentials: "include",
+            });
+            const data = await res.json();
+
+            const tbody = document.getElementById("notifList");
+            tbody.innerHTML = "";
+            data.forEach((n) => {
+              const row = document.createElement("tr");
+              row.className = n.trang_thai === "Chưa đọc" ? "unread" : "";
+              row.innerHTML = `
+      <td>${n.loai_thong_bao}</td>
+      <td>${n.noi_dung}</td>
+      <td>${n.thoi_gian}</td>
+      <td>${n.trang_thai}</td>
+    `;
+              row.onclick = () => openDetailModal(n);
+              tbody.appendChild(row);
+            });
+
+            document.getElementById("notifModal").style.display = "block";
+          }
+
+          function closeNotifModal() {
+            document.getElementById("notifModal").style.display = "none";
+          }
+
+          function closeDetailModal() {
+            document.getElementById("notifDetailModal").style.display = "none";
+          }
+
+          async function openDetailModal(n) {
+            document.getElementById("detailType").textContent =
+              n.loai_thong_bao;
+            document.getElementById("detailContent").textContent = n.noi_dung;
+            document.getElementById("detailTime").textContent = n.thoi_gian;
+
+            document.getElementById("notifDetailModal").style.display = "block";
+
+            if (n.trang_thai === "Chưa đọc") {
+              await fetch(`/notifications/read/${n.ID}`, {
+                method: "PUT",
+                credentials: "include",
+              });
+              openNotifModal(); // refresh danh sách
+            }
+          }
+        </script>
 
         <!-- Biểu tượng đổi nền (mặt trời) -->
         <div class="icon-wrapper" title="Màu nền">
@@ -82,6 +602,11 @@
         </button>
       </div>
     </div>
+    <div
+      id="toast-container"
+      style="position: fixed; top: 20px; right: 20px; z-index: 1000"
+    ></div>
+
     <!-- 🔺 Submenu theo yêu cầu -->
     <div class="submenu">
       <ul class="submenu-list">
@@ -124,7 +649,6 @@
               </div>
               <div class="dropdown-item">
                 <a href="/order/book/page" class="dropdown-item">
-                  <i data-feather="shuffle"></i>
                   <div>
                     <strong>Sổ lệnh</strong>
                     <span>Danh sách lệnh đã đặt</span>
@@ -151,19 +675,21 @@
                 >
                   <div>
                     <strong>Tải sản và Hiệu xuất</strong>
-                    <span>aaa</span>
+                    <span>Thông tin cổ phiếu đang sở hữu</span>
                   </div>
                 </a>
               </div>
               <div class="dropdown-item">
-                <i data-feather="check-circle"></i>
-                <div>
-                  <strong>Lãi/lỗ theo giao dịch</strong>
-                  <span class="desc"
-                    >Theo dõi lịch sử lãi/lỗ đã thực hiện theo từng mã cổ
-                    phiếu</span
-                  >
-                </div>
+                <a
+                  href="/user/balance/page"
+                  class="dropdown-item"
+                  style="display: flex; align-items: center; gap: 10px"
+                >
+                  <div>
+                    <strong>Tài khoản</strong>
+                    <span>Xem số dư tài khoản</span>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
@@ -265,6 +791,15 @@
         </button>
       </div>
     </div>
+    <!-- Modal -->
+    <div id="stock-modal" style="display: none">
+      <div class="modal-overlay"></div>
+      <div class="modal-container">
+        <span class="close-btn">&times;</span>
+        <!-- Nút đóng -->
+        {% include 'components/detailform.html' %}
+      </div>
+    </div>
 
     <table id="data-table">
       <thead>
@@ -315,12 +850,47 @@
           const parsedData = JSON.parse(data);
           const symbol = parsedData.Symbol;
           if (!symbol) return;
-
           dataMap[symbol] = parsedData;
+          if (
+            stockModal.style.display === "flex" &&
+            document.getElementById("modalSymbol").innerText ===
+              parsedData.Symbol
+          ) {
+            window.postMessage(
+              { type: "update_stock_detail", payload: parsedData },
+              "*"
+            );
+          }
           updateTable();
         } catch (e) {
           console.error("Invalid JSON:", data);
         }
+      });
+      document.getElementById("data-body").addEventListener("click", (e) => {
+        const cell = e.target.closest("td");
+        const row = e.target.closest("tr");
+        if (!cell || !row || cell.cellIndex !== 0) return; // chỉ cho phép click vào cột Symbol
+
+        const symbol = cell.textContent.trim();
+        const dataItem = dataMap[symbol];
+        if (!dataItem) {
+          alert("Chưa có dữ liệu cho mã này");
+          return;
+        }
+
+        // Tạm dừng update để tránh nhảy số khi đang xem
+        isPaused = true;
+        clearTimeout(pauseTimeout);
+        pauseTimeout = setTimeout(() => (isPaused = false), 1000);
+
+        // Gửi dữ liệu qua modal detailformstock.html
+        window.postMessage(
+          { type: "update_stock_detail", payload: dataItem },
+          "*"
+        );
+
+        // Hiện modal
+        stockModal.style.display = "flex";
       });
 
       function updateTable() {
@@ -360,49 +930,149 @@
             "High",
             "Low",
           ];
-
           fields.forEach((field) => {
             const cell = document.createElement("td");
             const value = item[field];
+            let displayValue = "";
 
             if (typeof value === "number") {
               if (
-                field.includes("Price") ||
-                field === "Ceiling" ||
-                field === "Floor" ||
-                field === "RefPrice" ||
-                field === "LastPrice" ||
-                field === "High" ||
-                field === "Low" ||
-                field.includes("AskPrice") ||
-                field.includes("BidPrice")
+                [
+                  "Ceiling",
+                  "Floor",
+                  "RefPrice",
+                  "High",
+                  "Low",
+                  "Price",
+                ].includes(field) ||
+                field.includes("Price")
               ) {
-                // Giá chia 1000
-                cell.textContent = (value / 1000).toFixed(2);
+                displayValue = (value / 1000).toFixed(2);
               } else if (
                 field.includes("Vol") ||
-                field === "TotalVol" ||
-                field === "LastVol"
+                ["TotalVol", "LastVol", "KL"].includes(field)
               ) {
-                // Khối lượng giữ nguyên, format số có dấu phẩy
-                cell.textContent = value.toLocaleString("en-US");
-              } else if (field === "Change" || field === "RatioChange") {
-                // Tăng/giảm tuyệt đối và phần trăm
-                const display = (value > 0 ? "+" : "") + value.toFixed(2);
-                cell.textContent =
-                  field === "RatioChange" ? display + "%" : display;
-                cell.style.color =
-                  value > 0 ? "limegreen" : value < 0 ? "red" : "#333";
+                displayValue = value.toLocaleString("en-US");
+              } else if (["Change", "RatioChange"].includes(field)) {
+                const formatted = (value > 0 ? "+" : "") + value.toFixed(2);
+                displayValue =
+                  field === "RatioChange" ? formatted + "%" : formatted;
               } else {
-                cell.textContent = value;
+                displayValue = value;
               }
             } else {
-              cell.textContent = value || "";
+              displayValue = value || "";
+            }
+
+            cell.textContent = displayValue;
+
+            // === MÀU GIÁ ===
+            if (
+              field.includes("Price") ||
+              ["Ceiling", "Floor", "RefPrice"].includes(field)
+            ) {
+              const price = value / 1000;
+              const tc = item.RefPrice / 1000;
+              const tran = item.Ceiling / 1000;
+              const san = item.Floor / 1000;
+
+              if (price === tran) {
+                cell.style.color = "#c600ff"; // tím
+              } else if (price === san) {
+                cell.style.color = "#0090ff"; // xanh dương
+              } else if (price === tc) {
+                cell.style.color = "#ffcc00"; // vàng
+              } else if (price > tc) {
+                cell.style.color = "lime";
+              } else if (price < tc) {
+                cell.style.color = "red";
+              }
+            }
+
+            // === MÀU CHO CÁC Ô THAY ĐỔI ===
+            if (["Change", "RatioChange"].includes(field)) {
+              if (value > 0) {
+                cell.style.color = "lime";
+              } else if (value < 0) {
+                cell.style.color = "red";
+              } else {
+                cell.style.color = "#ccc";
+              }
+            }
+
+            // === MÀU ĐẶC BIỆT CHO CAO = TRẦN, THẤP = SÀN ===
+            if (field === "High" || field === "Low") {
+              const price = value / 1000;
+              const tc = item.RefPrice / 1000;
+              const tran = item.Ceiling / 1000;
+              const san = item.Floor / 1000;
+
+              if (price === tran) cell.style.color = "#c600ff"; // trần
+              else if (price === san) cell.style.color = "#0090ff"; // sàn
+              else if (price === tc) cell.style.color = "#ffcc00"; // TC
+              else if (price > tc) cell.style.color = "lime";
+              else if (price < tc) cell.style.color = "red";
+              else cell.style.color = "#ccc";
+            }
+
+            // === MÀU CHO CỘT SYMBOL ===
+            if (field === "Symbol") {
+              const last = item.LastPrice / 1000;
+              const tc = item.RefPrice / 1000;
+              const tran = item.Ceiling / 1000;
+              const san = item.Floor / 1000;
+              //cell.style.fontWeight = "bold";
+
+              if (last === tran) cell.style.color = "#c600ff";
+              else if (last === san) cell.style.color = "#0090ff";
+              else if (last === tc) cell.style.color = "#ffcc00";
+              else if (last > tc) cell.style.color = "lime";
+              else if (last < tc) cell.style.color = "red";
+              else cell.style.color = "#ccc";
+            }
+
+            // === MÀU KHỐI LƯỢNG PHỤ THUỘC GIÁ TƯƠNG ỨNG ===
+            const applyVolColor = (priceVal) => {
+              const price = priceVal / 1000;
+              const tc = item.RefPrice / 1000;
+              const tran = item.Ceiling / 1000;
+              const san = item.Floor / 1000;
+
+              if (price === tran) {
+                cell.style.color = "#c600ff"; // tím
+              } else if (price === san) {
+                cell.style.color = "#0090ff"; // xanh dương
+              } else if (price === tc) {
+                cell.style.color = "#ffcc00"; // vàng
+              } else if (price > tc) {
+                cell.style.color = "lime";
+              } else if (price < tc) {
+                cell.style.color = "red";
+              }
+            };
+
+            // Xử lý màu cho các cột KL1, KL2, KL3, KL (khớp), TotalVol
+            const volumeColorMap = {
+              BidVol1: item["BidPrice1"],
+              BidVol2: item["BidPrice2"],
+              BidVol3: item["BidPrice3"],
+              AskVol1: item["AskPrice1"],
+              AskVol2: item["AskPrice2"],
+              AskVol3: item["AskPrice3"],
+              LastVol: item["LastPrice"],
+              KL: item["Price"],
+            };
+
+            if (volumeColorMap[field] !== undefined) {
+              applyVolColor(volumeColorMap[field]);
+            }
+
+            if (field === "TotalVol") {
+              cell.style.color = "white";
             }
 
             row.appendChild(cell);
           });
-
           tbody.appendChild(row);
         });
       }
@@ -489,20 +1159,103 @@
       async function fetchWithAuth(url, options = {}) {
         try {
           const response = await fetch(url, options);
+
           if (response.status === 401) {
-            alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.");
-            // Optionally redirect:
-            window.location.href = "/login"; // đổi URL theo hệ thống của bạn
-            return;
+            showToast(
+              "⚠️ Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.",
+              "error"
+            );
+            return null;
           }
 
           const data = await response.json();
           return data;
         } catch (error) {
           console.error("Lỗi khi gửi yêu cầu:", error);
-          alert("Đã xảy ra lỗi. Vui lòng thử lại.");
+          showToast("❌ Lỗi kết nối đến máy chủ.", "error");
+          return null;
         }
       }
+
+      function showToast(message, type = "error", duration = 3000) {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        toast.textContent = message;
+        toast.style.padding = "12px 20px";
+        toast.style.marginBottom = "10px";
+        toast.style.borderRadius = "8px";
+        toast.style.backgroundColor = type === "error" ? "#ff4d4f" : "#52c41a";
+        toast.style.color = "white";
+        toast.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+        toast.style.transition = "opacity 0.5s";
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = 0;
+          setTimeout(() => container.removeChild(toast), 500);
+        }, duration);
+      }
+    </script>
+    <script>
+      let isPaused = false;
+      let pauseTimeout = null;
+
+      const stockModal = document.getElementById("stock-modal");
+      const modalOverlay = stockModal.querySelector(".modal-overlay");
+
+      // Đóng modal khi click overlay hoặc nút X
+      modalOverlay.addEventListener(
+        "click",
+        () => (stockModal.style.display = "none")
+      );
+      document.addEventListener("click", (e) => {
+        if (e.target.classList.contains("close-btn")) {
+          stockModal.style.display = "none";
+        }
+      });
+
+      // Click vào bảng
+      document.getElementById("data-body").addEventListener("click", (e) => {
+        const cell = e.target.closest("td");
+        const row = e.target.closest("tr");
+        if (!cell || !row || cell.cellIndex !== 0) return; // chỉ cột Symbol
+
+        const symbol = cell.textContent.trim();
+        const dataItem = dataMap[symbol];
+        if (!dataItem) return;
+
+        // Pause update 1s
+        isPaused = true;
+        clearTimeout(pauseTimeout);
+        pauseTimeout = setTimeout(() => (isPaused = false), 1000);
+
+        // Gửi dữ liệu vào form chi tiết cổ phiếu
+        window.postMessage(
+          {
+            type: "update_stock_detail",
+            payload: dataItem,
+          },
+          "*"
+        );
+
+        // Hiện modal
+        stockModal.style.display = "flex";
+      });
+
+      // Socket nhận dữ liệu từ server
+      socket.on("server_data", function (data) {
+        if (isPaused) return; // đang pause
+        try {
+          const parsedData = JSON.parse(data);
+          if (!parsedData.Symbol) return;
+          dataMap[parsedData.Symbol] = parsedData;
+          updateTable();
+        } catch (e) {
+          console.error("Invalid JSON:", data);
+        }
+      });
     </script>
   </body>
 </html>
