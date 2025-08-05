@@ -24,6 +24,20 @@
     ></script>
 
     <style>
+      .flash-white {
+        animation: flashWhite 0.1s ease;
+      }
+
+      @keyframes flashWhite {
+        0% {
+          background-color: white;
+          color: black;
+        }
+        100% {
+          background-color: transparent;
+        }
+      }
+
       /* Style chung giữ nguyên */
       /* ======================== BẢNG GIÁ ======================== */
       #data-table {
@@ -893,11 +907,12 @@
         stockModal.style.display = "flex";
       });
 
+      // Lưu dữ liệu cũ để so sánh
+      let prevDataMap = {};
       function updateTable() {
         const tbody = document.getElementById("data-body");
-        tbody.innerHTML = ""; // Clear previous
+        tbody.innerHTML = "";
 
-        // Sắp xếp theo A-Z
         const sortedData = Object.values(dataMap).sort((a, b) =>
           a.Symbol.localeCompare(b.Symbol)
         );
@@ -930,6 +945,7 @@
             "High",
             "Low",
           ];
+
           fields.forEach((field) => {
             const cell = document.createElement("td");
             const value = item[field];
@@ -966,6 +982,19 @@
 
             cell.textContent = displayValue;
 
+            // ===== SO SÁNH VỚI GIÁ TRỊ CŨ ĐỂ NHÁY =====
+            const oldValue = prevDataMap[item.Symbol]?.[field];
+            if (oldValue !== undefined && oldValue !== value) {
+              cell.classList.add("flash-white");
+              cell.addEventListener(
+                "animationend",
+                () => {
+                  cell.classList.remove("flash-white");
+                },
+                { once: true }
+              );
+            }
+
             // === MÀU GIÁ ===
             if (
               field.includes("Price") ||
@@ -976,28 +1005,18 @@
               const tran = item.Ceiling / 1000;
               const san = item.Floor / 1000;
 
-              if (price === tran) {
-                cell.style.color = "#c600ff"; // tím
-              } else if (price === san) {
-                cell.style.color = "#0090ff"; // xanh dương
-              } else if (price === tc) {
-                cell.style.color = "#ffcc00"; // vàng
-              } else if (price > tc) {
-                cell.style.color = "lime";
-              } else if (price < tc) {
-                cell.style.color = "red";
-              }
+              if (price === tran) cell.style.color = "#c600ff";
+              else if (price === san) cell.style.color = "#0090ff";
+              else if (price === tc) cell.style.color = "#ffcc00";
+              else if (price > tc) cell.style.color = "lime";
+              else if (price < tc) cell.style.color = "red";
             }
 
             // === MÀU CHO CÁC Ô THAY ĐỔI ===
             if (["Change", "RatioChange"].includes(field)) {
-              if (value > 0) {
-                cell.style.color = "lime";
-              } else if (value < 0) {
-                cell.style.color = "red";
-              } else {
-                cell.style.color = "#ccc";
-              }
+              if (value > 0) cell.style.color = "lime";
+              else if (value < 0) cell.style.color = "red";
+              else cell.style.color = "#ccc";
             }
 
             // === MÀU ĐẶC BIỆT CHO CAO = TRẦN, THẤP = SÀN ===
@@ -1007,9 +1026,9 @@
               const tran = item.Ceiling / 1000;
               const san = item.Floor / 1000;
 
-              if (price === tran) cell.style.color = "#c600ff"; // trần
-              else if (price === san) cell.style.color = "#0090ff"; // sàn
-              else if (price === tc) cell.style.color = "#ffcc00"; // TC
+              if (price === tran) cell.style.color = "#c600ff";
+              else if (price === san) cell.style.color = "#0090ff";
+              else if (price === tc) cell.style.color = "#ffcc00";
               else if (price > tc) cell.style.color = "lime";
               else if (price < tc) cell.style.color = "red";
               else cell.style.color = "#ccc";
@@ -1021,7 +1040,6 @@
               const tc = item.RefPrice / 1000;
               const tran = item.Ceiling / 1000;
               const san = item.Floor / 1000;
-              //cell.style.fontWeight = "bold";
 
               if (last === tran) cell.style.color = "#c600ff";
               else if (last === san) cell.style.color = "#0090ff";
@@ -1038,20 +1056,13 @@
               const tran = item.Ceiling / 1000;
               const san = item.Floor / 1000;
 
-              if (price === tran) {
-                cell.style.color = "#c600ff"; // tím
-              } else if (price === san) {
-                cell.style.color = "#0090ff"; // xanh dương
-              } else if (price === tc) {
-                cell.style.color = "#ffcc00"; // vàng
-              } else if (price > tc) {
-                cell.style.color = "lime";
-              } else if (price < tc) {
-                cell.style.color = "red";
-              }
+              if (price === tran) cell.style.color = "#c600ff";
+              else if (price === san) cell.style.color = "#0090ff";
+              else if (price === tc) cell.style.color = "#ffcc00";
+              else if (price > tc) cell.style.color = "lime";
+              else if (price < tc) cell.style.color = "red";
             };
 
-            // Xử lý màu cho các cột KL1, KL2, KL3, KL (khớp), TotalVol
             const volumeColorMap = {
               BidVol1: item["BidPrice1"],
               BidVol2: item["BidPrice2"],
@@ -1073,8 +1084,67 @@
 
             row.appendChild(cell);
           });
+
           tbody.appendChild(row);
         });
+
+        // Cập nhật dữ liệu cũ
+        prevDataMap = JSON.parse(JSON.stringify(dataMap));
+      }
+
+      function applyCellColor(cell, field, value, item) {
+        // Reset màu chữ
+        cell.style.color = "";
+
+        if (
+          field.includes("Price") ||
+          ["Ceiling", "Floor", "RefPrice"].includes(field)
+        ) {
+          const price = value / 1000;
+          const tc = item.RefPrice / 1000;
+          const tran = item.Ceiling / 1000;
+          const san = item.Floor / 1000;
+
+          if (price === tran) cell.style.color = "#c600ff";
+          else if (price === san) cell.style.color = "#0090ff";
+          else if (price === tc) cell.style.color = "#ffcc00";
+          else if (price > tc) cell.style.color = "lime";
+          else if (price < tc) cell.style.color = "red";
+        }
+
+        if (["Change", "RatioChange"].includes(field)) {
+          if (value > 0) cell.style.color = "lime";
+          else if (value < 0) cell.style.color = "red";
+          else cell.style.color = "#ccc";
+        }
+
+        if (field === "High" || field === "Low") {
+          const price = value / 1000;
+          const tc = item.RefPrice / 1000;
+          const tran = item.Ceiling / 1000;
+          const san = item.Floor / 1000;
+
+          if (price === tran) cell.style.color = "#c600ff";
+          else if (price === san) cell.style.color = "#0090ff";
+          else if (price === tc) cell.style.color = "#ffcc00";
+          else if (price > tc) cell.style.color = "lime";
+          else if (price < tc) cell.style.color = "red";
+          else cell.style.color = "#ccc";
+        }
+
+        if (field === "Symbol") {
+          const last = item.LastPrice / 1000;
+          const tc = item.RefPrice / 1000;
+          const tran = item.Ceiling / 1000;
+          const san = item.Floor / 1000;
+
+          if (last === tran) cell.style.color = "#c600ff";
+          else if (last === san) cell.style.color = "#0090ff";
+          else if (last === tc) cell.style.color = "#ffcc00";
+          else if (last > tc) cell.style.color = "lime";
+          else if (last < tc) cell.style.color = "red";
+          else cell.style.color = "#ccc";
+        }
       }
 
       function handleExchangeClick(exchangeName) {
@@ -1100,6 +1170,7 @@
       }
       setInterval(updateClock, 1000);
       updateClock();
+
       window.onload = function () {
         handleExchangeClick("VN30");
       };

@@ -114,7 +114,7 @@ def broadcast_market_data_loop():
                 print(f"❌ Lỗi khi gửi dữ liệu: {e}")
             finally:
                 session.close()
-        time.sleep(0.3)
+        time.sleep(0.25)
 
 def xu_ly_khop_lenh_lien_tuc():
     while True:
@@ -682,7 +682,16 @@ def place_order():
             trading="Chưa khớp"
         )
 
+        # ✅ Gửi thông báo
+    
         db.add(new_order)
+        session.add(ThongBao(
+            ID_user=user_id,
+            loai_thong_bao="Mua Bán",
+            noi_dung=f"Lệnh {side.upper()} cổ phiếu {new_order.ID_stock} đã được đặt với khối lượng {qty} CP giá {price}.",
+            trang_thai="Chưa đọc",
+            thoi_gian=new_order.thoi_diem_dat
+        ))
         db.commit()
         db.refresh(new_order)
 
