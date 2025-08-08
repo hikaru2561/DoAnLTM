@@ -1,7 +1,6 @@
 import eventlet
 eventlet.monkey_patch()
-from flask import Flask, request,jsonify,render_template,session,Response
-from flask_socketio import SocketIO
+from flask import Flask, request,jsonify,render_template,session
 from config import Config
 from utils.db import init_db
 from flask_socketio import emit,SocketIO
@@ -21,7 +20,6 @@ from datetime import date,timedelta
 from models.models import GiaoDich, QuyNguoiDung,DatLenh,DanhMucDauTu,MarketData ,ThongBao ,LichSuKhopLenh
 from functools import wraps
 from sqlalchemy import func 
-from decimal import Decimal
 from sqlalchemy.orm import joinedload
 from zoneinfo import ZoneInfo
 

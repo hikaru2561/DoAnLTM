@@ -1,3 +1,10 @@
 PyJWT
 finnhub-python
 flask_jwt_extended
+flask
+flask_socketio
+flask_sqlalchemy
+ssi_fc_data
+threading
+sqlalchemy
+functools
